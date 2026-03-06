@@ -1,4 +1,4 @@
-# VAANI — AI Voice Authenticity Detection
+# 🎙️ VAANI — AI Voice Authenticity Detection
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
@@ -11,23 +11,23 @@ VAANI is an AI-powered system that detects whether a voice recording is **human 
 
 The system analyzes short audio clips and classifies them as:
 
-• Human Voice  
-• AI Generated Voice  
-• Inconclusive  
+• 🧑 Human Voice  
+• 🤖 AI Generated Voice  
+• ⚠️ Inconclusive  
 
 VAANI combines **deep speech embeddings** with **acoustic signal analysis** to detect patterns typical of synthetic voices.
 
 ---
 
-# Problem Statement
+# 🚨 Problem Statement
 
 AI voice cloning technologies can now replicate human voices with high realism.
 
 These tools are increasingly used in:
 
-- Scam calls  
-- Misinformation campaigns  
-- Identity fraud  
+- 📞 Scam calls  
+- 📰 Misinformation campaigns  
+- 🪪 Identity fraud  
 
 Distinguishing human speech from AI-generated voices is therefore becoming an important security challenge.
 
@@ -35,7 +35,7 @@ VAANI addresses this problem by analyzing acoustic characteristics of speech and
 
 ---
 
-# Solution Overview
+# 💡 Solution Overview
 
 VAANI analyzes uploaded voice recordings and determines voice authenticity.
 
@@ -54,19 +54,7 @@ Inconclusive
 
 ---
 
-# Demo
-
-Below is an example workflow of the system.
-
-Upload → Analyze → Result
-
-![Vaani Demo](docs/demo.gif)
-
-*(Replace with a short screen recording of the UI once available.)*
-
----
-
-# System Architecture
+# 🏗 System Architecture
 
 ```mermaid
 flowchart TD
@@ -90,7 +78,7 @@ The frontend communicates with the backend API which processes audio and runs th
 
 ---
 
-# How the System Works
+# ⚙️ How the System Works
 
 Audio Upload  
 ↓  
@@ -110,7 +98,7 @@ Entropy is used to determine uncertainty in predictions.
 
 ---
 
-# Technology Stack
+# 🧰 Technology Stack
 
 ## Backend
 
@@ -133,21 +121,20 @@ Entropy is used to determine uncertainty in predictions.
 
 ---
 
-# Quick Start
+# 🚀 Quick Start
 
 Clone repository:
 
 ```
-git clone https://github.com/<username>/vaani.git
-cd vaani
+git clone https://github.com/vivek-i8/vaani-voice-authenticity.git
+cd vaani-voice-authenticity
 ```
 
 ---
 
-# Setup Instructions
+# 🛠 Setup Instructions
 
 <details>
-
 <summary><b>Backend Setup</b></summary>
 
 Create virtual environment
@@ -176,7 +163,7 @@ Start backend server
 uvicorn app.main:app --reload
 ```
 
-Backend will run at
+Backend runs at
 
 ```
 http://127.0.0.1:8000
@@ -193,7 +180,6 @@ http://127.0.0.1:8000/docs
 ---
 
 <details>
-
 <summary><b>Frontend Setup</b></summary>
 
 Open a new terminal
@@ -204,7 +190,7 @@ npm install
 npm run dev
 ```
 
-Frontend will run at
+Frontend runs at
 
 ```
 http://localhost:3000
@@ -214,14 +200,14 @@ http://localhost:3000
 
 ---
 
-# Dataset Sources
+# 📊 Dataset Sources
 
 Datasets used during development:
 
-Medley Deepfake Speech Dataset  
+**Medley Deepfake Speech Dataset**  
 https://data.mendeley.com/datasets/79g59sp69z/1
 
-Audio Deepfake Detection Dataset (Kaggle)  
+**Audio Deepfake Detection Dataset (Kaggle)**  
 https://www.kaggle.com/datasets/adarshsingh0903/audio-deepfake-detection-dataset
 
 These datasets were used to create a balanced dataset of human and AI-generated speech samples.
@@ -230,7 +216,7 @@ Datasets are not included in this repository due to size and licensing considera
 
 ---
 
-# Model Architecture
+# 🧠 Model Architecture
 
 VAANI uses a **fusion architecture** combining deep speech embeddings and acoustic signal analysis.
 
@@ -250,7 +236,42 @@ Entropy is used to detect uncertain predictions and label them as **Inconclusive
 
 ---
 
-# Project Structure
+# 📈 Model Performance
+
+The VAANI fusion classifier was evaluated on a **held-out test split of the training dataset** consisting of human and AI-generated speech samples.
+
+| Metric | Value |
+|------|------|
+| Training Accuracy | 96.88% |
+| Validation Accuracy | 87.50% |
+| Test Accuracy | 90.00% |
+
+The model combines **Wav2Vec2 speech embeddings** with **acoustic signal features** and uses entropy-based uncertainty detection to classify uncertain predictions as **Inconclusive**.
+
+---
+
+## Training Curves & Confusion Matrix
+
+![Training Results](models/vaani_model/training_curves.png)
+
+The training visualization above shows:
+
+• Training vs Validation Loss  
+• Training vs Validation Accuracy  
+• Confusion Matrix of predictions  
+
+### Confusion Matrix Summary
+
+| True Label | Predicted Human | Predicted AI |
+|------------|----------------|--------------|
+| Human | 20 | 0 |
+| AI | 4 | 16 |
+
+These results indicate that the model learns discriminative patterns between human and AI-generated speech **within the training dataset distribution**.
+
+---
+
+# 📂 Project Structure
 
 ```
 vaani
@@ -282,7 +303,7 @@ The backend handles inference while the frontend provides the user interface.
 
 ---
 
-# Limitations
+# ⚠️ Limitations
 
 VAANI is currently trained on curated public datasets for AI voice detection.
 
@@ -297,7 +318,7 @@ These variations can shift acoustic feature distributions and occasionally affec
 
 ---
 
-# Future Improvements
+# 🔮 Future Improvements
 
 Future versions of VAANI will improve robustness through:
 
