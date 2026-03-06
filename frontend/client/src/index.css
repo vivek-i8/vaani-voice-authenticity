@@ -1,0 +1,283 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --primary: #2DD4BF;
+  --primary-foreground: #020617;
+  --sidebar-primary: #2DD4BF;
+  --sidebar-primary-foreground: #020617;
+  --chart-1: #2DD4BF;
+  --chart-2: #7C3AED;
+  --chart-3: #FB7185;
+  --chart-4: #2DD4BF;
+  --chart-5: #7C3AED;
+  --radius: 0.65rem;
+  --background: #020617;
+  --foreground: #E5E7EB;
+  --card: #0F172A;
+  --card-foreground: #E5E7EB;
+  --popover: #0F172A;
+  --popover-foreground: #E5E7EB;
+  --secondary: #1E293B;
+  --secondary-foreground: #E5E7EB;
+  --muted: #334155;
+  --muted-foreground: #94A3B8;
+  --accent: #2DD4BF;
+  --accent-foreground: #020617;
+  --destructive: #FB7185;
+  --destructive-foreground: #E5E7EB;
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #2DD4BF;
+  --sidebar: #0F172A;
+  --sidebar-foreground: #E5E7EB;
+  --sidebar-accent: #2DD4BF;
+  --sidebar-accent-foreground: #020617;
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #2DD4BF;
+}
+
+.dark {
+  --primary: #2DD4BF;
+  --primary-foreground: #020617;
+  --sidebar-primary: #2DD4BF;
+  --sidebar-primary-foreground: #020617;
+  --background: #020617;
+  --foreground: #E5E7EB;
+  --card: #0F172A;
+  --card-foreground: #E5E7EB;
+  --popover: #0F172A;
+  --popover-foreground: #E5E7EB;
+  --secondary: #1E293B;
+  --secondary-foreground: #E5E7EB;
+  --muted: #334155;
+  --muted-foreground: #94A3B8;
+  --accent: #2DD4BF;
+  --accent-foreground: #020617;
+  --destructive: #FB7185;
+  --destructive-foreground: #E5E7EB;
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #2DD4BF;
+  --chart-1: #2DD4BF;
+  --chart-2: #7C3AED;
+  --chart-3: #FB7185;
+  --chart-4: #2DD4BF;
+  --chart-5: #7C3AED;
+  --sidebar: #0F172A;
+  --sidebar-foreground: #E5E7EB;
+  --sidebar-accent: #2DD4BF;
+  --sidebar-accent-foreground: #020617;
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #2DD4BF;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+  }
+  code, pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  /* Typography utilities */
+  .font-heading {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+  }
+
+  .font-serif-italic {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Glass morphism card */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
+    background-image: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.02) 45%,
+      rgba(45, 212, 191, 0.06) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 20px 40px rgba(2, 6, 23, 0.36);
+    transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  }
+
+  .glass-card:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 24px 52px rgba(2, 6, 23, 0.42),
+      0 0 32px rgba(45, 212, 191, 0.12);
+  }
+
+  /* Teal glow effect */
+  .glow-teal {
+    @apply hover:shadow-lg hover:shadow-teal-500/20 transition-shadow duration-300;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Button hover glow */
+  .btn-glow {
+    @apply transition-all duration-300 hover:shadow-lg hover:shadow-teal-500/20;
+  }
+
+  /* Card hover scale */
+  .card-hover {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+
+  /* Input focus ring */
+  input:focus-visible {
+    @apply outline-none ring-2 ring-teal-400/50;
+  }
+
+  /* Smooth page transitions */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+}

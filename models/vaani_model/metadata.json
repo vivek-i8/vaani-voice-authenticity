@@ -1,0 +1,159 @@
+{
+  "model_version": "vaani_model",
+  "timestamp": "2026-03-04T15:54:16.739012",
+  "training_time_seconds": 43.16375660896301,
+  "dataset_info": {
+    "total_samples": 8,
+    "human_samples": 2,
+    "ai_samples": 6,
+    "train_samples": 320,
+    "val_samples": 40,
+    "test_samples": 40
+  },
+  "feature_dimensions": {
+    "wav2vec_embedding": 1024,
+    "acoustic_features": 3,
+    "total_features": 1027
+  },
+  "model_architecture": {
+    "input_dim": 1027,
+    "hidden_layers": [
+      256,
+      64
+    ],
+    "output_dim": 2,
+    "activation": "ReLU",
+    "dropout": 0.3,
+    "classes": [
+      "human",
+      "ai"
+    ]
+  },
+  "training_params": {
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "max_epochs": 50,
+    "early_stopping_patience": 5,
+    "epochs_trained": 16,
+    "device": "cuda"
+  },
+  "results": {
+    "final_train_accuracy": 96.875,
+    "final_val_accuracy": 87.5,
+    "test_accuracy": 90.0,
+    "best_val_loss": 0.27935608476400375
+  },
+  "confusion_matrix": [
+    [
+      20,
+      0
+    ],
+    [
+      4,
+      16
+    ]
+  ],
+  "classification_report": {
+    "human": {
+      "precision": 0.8333333333333334,
+      "recall": 1.0,
+      "f1-score": 0.9090909090909091,
+      "support": 20.0
+    },
+    "ai": {
+      "precision": 1.0,
+      "recall": 0.8,
+      "f1-score": 0.8888888888888888,
+      "support": 20.0
+    },
+    "accuracy": 0.9,
+    "macro avg": {
+      "precision": 0.9166666666666667,
+      "recall": 0.9,
+      "f1-score": 0.898989898989899,
+      "support": 40.0
+    },
+    "weighted avg": {
+      "precision": 0.9166666666666667,
+      "recall": 0.9,
+      "f1-score": 0.898989898989899,
+      "support": 40.0
+    }
+  },
+  "training_history": {
+    "train_losses": [
+      0.6262422949075699,
+      0.38836834728717806,
+      0.3248474195599556,
+      0.25408570617437365,
+      0.24971215128898622,
+      0.18293639719486238,
+      0.16409002542495726,
+      0.125474813580513,
+      0.10325963776558637,
+      0.09470449425280095,
+      0.10320303440093995,
+      0.08140855040401221,
+      0.06449250625446439,
+      0.1350009862333536,
+      0.2018301535397768,
+      0.0722500491887331
+    ],
+    "val_losses": [
+      0.4838223159313202,
+      0.4139630198478699,
+      0.3978081941604614,
+      0.4675449728965759,
+      0.4016425311565399,
+      0.3833451345562935,
+      0.3055909685790539,
+      0.2810351699590683,
+      0.2959961425513029,
+      0.3155396170914173,
+      0.27935608476400375,
+      0.29974006302654743,
+      0.40045182406902313,
+      0.3437119796872139,
+      0.3092861119657755,
+      0.2795129343867302
+    ],
+    "train_accuracies": [
+      68.4375,
+      82.5,
+      85.9375,
+      90.3125,
+      90.9375,
+      92.5,
+      92.8125,
+      96.25,
+      95.3125,
+      96.25,
+      95.625,
+      97.5,
+      98.125,
+      95.9375,
+      93.75,
+      96.875
+    ],
+    "val_accuracies": [
+      75.0,
+      75.0,
+      77.5,
+      75.0,
+      80.0,
+      85.0,
+      87.5,
+      82.5,
+      82.5,
+      80.0,
+      87.5,
+      85.0,
+      80.0,
+      87.5,
+      82.5,
+      87.5
+    ]
+  },
+  "note": "Inconclusive class handled during inference using entropy threshold (e.g., >0.65)"
+}

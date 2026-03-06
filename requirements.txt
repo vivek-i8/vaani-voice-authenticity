@@ -1,0 +1,14 @@
+torch --index-url https://download.pytorch.org/whl/cu121
+torchvision --index-url https://download.pytorch.org/whl/cu121
+torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+transformers
+librosa
+fastapi
+uvicorn[standard]
+python-multipart
+numpy
+soundfile
+pydantic-settings
+boto3
+protobuf
