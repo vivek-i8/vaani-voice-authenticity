@@ -1,0 +1,4 @@
+# Force no cache for deployment
+node_modules
+dist
+.env.local

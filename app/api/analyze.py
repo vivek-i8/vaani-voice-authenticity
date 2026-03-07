@@ -21,6 +21,7 @@ analyze_router = APIRouter(prefix="/analyze", tags=["analyze"])
 TEMP_UPLOADS_DIR = "temp_uploads"
 os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
 
+@analyze_router.post("")
 @analyze_router.post("/")
 async def analyze_audio_file(file: UploadFile = File(...)):
     """

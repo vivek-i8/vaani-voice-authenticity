@@ -33,7 +33,7 @@ export default function Analysis() {
         const formData = new FormData();
         formData.append('file', audioFile);
 
-        const response = await fetch('https://vaani-13-233-132-63.duckdns.org/api/analyze', {
+        const response = await fetch('https://vaani-13-233-132-63.duckdns.org/api/analyze/', {
           method: 'POST',
           body: formData,
         });
