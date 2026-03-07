@@ -1,6 +1,6 @@
 const API_BASE_URL = (import.meta as any)?.env?.VITE_API_BASE_URL
   ? `${(import.meta as any).env.VITE_API_BASE_URL}/api`
-  : 'http://127.0.0.1:8000/api';
+  : 'https://vaani-13-233-132-63.duckdns.org/api';
 
 export interface AnalysisResponse {
   label: 'Human' | 'AI' | 'Inconclusive';
