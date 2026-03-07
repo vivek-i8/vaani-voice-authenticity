@@ -25,7 +25,7 @@ app = FastAPI(
 # Add CORS middleware for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://vaani-voice-authenticity.vercel.app","https://vaani-voice-authenticity-xswv.vercel.app"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
