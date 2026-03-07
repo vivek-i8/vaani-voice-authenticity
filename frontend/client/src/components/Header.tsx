@@ -22,7 +22,7 @@ export default function Header({ onAnalyzeClick, showAnalyzeButton = true }: Hea
   const healthUrl = useMemo(() => {
     // We already call /api from the frontend; health lives at /api/v1/health.
     // Default local backend: http://127.0.0.1:8000
-    const apiBase = (import.meta as any)?.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+    const apiBase = (import.meta as any)?.env?.VITE_API_BASE_URL || 'https://vaani-13-233-132-63.duckdns.org';
     return `${apiBase}/api/v1/health`;
   }, []);
 
