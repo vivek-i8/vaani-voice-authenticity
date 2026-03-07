@@ -1,4 +1,4 @@
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api`;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://vaani-13-233-132-63.duckdns.org';
 
 export interface AnalysisResponse {
   label: 'Human' | 'AI' | 'Inconclusive';
@@ -16,7 +16,7 @@ export async function analyzeAudio(audioFile: File): Promise<AnalysisResponse> {
   const formData = new FormData();
   formData.append('file', audioFile);
 
-  const response = await fetch(`${API_BASE_URL}/analyze`, {
+  const response = await fetch(`${API_BASE_URL}/api/analyze`, {
     method: 'POST',
     body: formData,
   });
