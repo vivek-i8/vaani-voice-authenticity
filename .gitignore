@@ -58,3 +58,11 @@ temp_uploads/
 # Misc
 .ipynb_checkpoints/
 *.swp
+
+# SSL / certificates
+*.pem
+*.key
+*.crt
+
+# Python cache everywhere
+**/__pycache__/
