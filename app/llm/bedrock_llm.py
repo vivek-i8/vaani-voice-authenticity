@@ -64,7 +64,7 @@ class BedrockLLM(LLMService):
     
     def _construct_prompt(self, structured_data: Dict[str, Any], language: str) -> str:
         """Construct structured prompt for Claude."""
-        classification = structured_data.get("classification", "unknown")
+        predicted_label = structured_data.get("label", "unknown")
         confidence = structured_data.get("confidence", 0.0)
         pitch_variance = structured_data.get("pitch_variance", 0.0)
         spectral_drift = structured_data.get("spectral_drift", 0.0)
@@ -74,33 +74,49 @@ class BedrockLLM(LLMService):
         language_instruction = "Hindi" if language == "hi" else "English"
         
         prompt = f"""
-You are Vaani's explanation assistant. Analyze the voice classification data and provide a structured explanation.
+You are an AI forensic speech analysis expert.
+A machine learning system has already analyzed an audio sample and produced the following acoustic signal metrics and classification result.
 
-VAANI SIGNAL METRICS:
-- Predicted Label: {classification}
-- Confidence: {confidence:.2f}
-- Pitch Variance: {pitch_variance:.2f}
-- Spectral Drift: {spectral_drift:.2f}
-- Zero Crossing Rate Variance: {zcr_variance:.6f}
-- Entropy: {entropy:.3f}
+Your job is to explain WHY the model reached this decision using acoustic signal metrics.
 
-REQUIREMENTS:
-1. Respond in {language_instruction}
-2. Maximum 150 words total across all fields
-3. Explain the decision based on the specific VAANI signal metrics provided
-4. Reference the actual values in your technical analysis
-5. Include specific safety recommendations based on the classification
-6. No hallucinated claims or legal guarantees
+Important rules:
+* Do not question audio quality.
+* Do not refuse analysis.
+* Do not say audio is insufficient.
+* Assume the ML system already processed the audio correctly.
+* Explain how acoustic signals support the classification result.
 
-RESPONSE FORMAT (JSON):
+Predicted Label: {predicted_label}
+Confidence: {confidence:.2f}
+
+Acoustic Metrics:
+Pitch Variance: {pitch_variance:.2f}
+Spectral Drift: {spectral_drift:.2f}
+ZCR Variance: {zcr_variance:.6f}
+Entropy: {entropy:.3f}
+
+Explain how these acoustic signal metrics support the classification result. Reference specific values in your technical analysis.
+
+Return structured JSON with this exact format:
 {{
-    "summary": "Brief explanation of the classification result",
-    "technical_analysis": "Explain how the VAANI signal metrics influenced the decision",
-    "recommendation": "Recommended action for the user",
+    "summary": "Short explanation of the classification result",
+    "technical_analysis": "Detailed reasoning referencing acoustic signal metrics and explaining why they indicate human or AI speech",
+    "recommendation": "Suggested action for the user (verify source, request clearer sample, etc.)",
     "model": "Claude Bedrock"
 }}
 
-Analyze the VAANI signal metrics and provide response in the specified JSON format.
+Example style to follow:
+
+Summary
+The system classified this voice sample as AI-generated with very high confidence.
+
+Technical Analysis
+The acoustic analysis detected extremely stable pitch patterns combined with unusually high spectral drift. These characteristics are commonly associated with neural speech synthesis systems because synthesized voices often maintain consistent pitch while producing unnatural spectral transitions across frequency bands.
+
+Recommendation
+Treat this voice sample with caution and verify the speaker identity through another trusted communication channel.
+
+Respond in {language_instruction}.
 """
         return prompt
     
