@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     max_clips: int = 10
 
     # LLM configuration
-    use_bedrock: bool = False
+    use_bedrock: bool = True
     aws_region: str = "us-east-1"
     bedrock_model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
 
