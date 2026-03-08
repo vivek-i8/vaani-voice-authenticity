@@ -7,7 +7,6 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
 import librosa
-import numpy as np
 
 # Import Claude + Bedrock pipeline
 from app.services.single_clip import analyze_single_clip
@@ -58,7 +57,7 @@ async def analyze_audio_file(file: UploadFile = File(...)):
 
             logger.info(f"File saved temporarily: {temp_file_path}")
 
-        # Load audio
+        # Load audio (only to validate)
         try:
 
             audio, sr = librosa.load(temp_file_path, sr=16000, mono=True)
@@ -80,16 +79,15 @@ async def analyze_audio_file(file: UploadFile = File(...)):
         # Run VAANI + Claude pipeline
         try:
 
-            audio_bytes = audio.astype(np.float32).tobytes()
-
             result = analyze_single_clip(
-                audio_bytes,
+                temp_file_path,
                 language="en"
             )
 
             logger.info("Inference completed successfully")
 
         except Exception as e:
+            logger.error(f"Inference error: {str(e)}")
             raise HTTPException(
                 status_code=500,
                 detail=f"Inference failed: {str(e)}"
@@ -109,6 +107,7 @@ async def analyze_audio_file(file: UploadFile = File(...)):
 
     finally:
 
+        # Clean up temporary file
         if temp_file_path and os.path.exists(temp_file_path):
             try:
                 os.unlink(temp_file_path)
