@@ -22,7 +22,8 @@ export default function Analysis() {
   useEffect(() => {
     // Check if audio file is available
     if (!audioFile) {
-      setLocation('/');
+      // Instead of redirecting, show a proper message
+      setState('error');
       return;
     }
 
@@ -63,12 +64,13 @@ export default function Analysis() {
           <ProcessingState />
         ) : state === 'error' ? (
           <div className="text-center py-8">
-            <p className="text-red-500">Analysis failed. Please try again.</p>
+            <p className="text-red-500 mb-4">No audio file found for analysis.</p>
+            <p className="text-gray-400 mb-6">Please upload an audio file from the home page to start analysis.</p>
             <button 
-              onClick={() => setState('processing')}
+              onClick={() => setLocation('/')}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
             >
-              Try Again
+              Go to Home Page
             </button>
           </div>
         ) : (
