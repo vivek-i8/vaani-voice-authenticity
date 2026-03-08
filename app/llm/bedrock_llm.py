@@ -66,28 +66,35 @@ class BedrockLLM(LLMService):
         """Construct structured prompt for Claude."""
         classification = structured_data.get("classification", "unknown")
         confidence = structured_data.get("confidence", 0.0)
+        pitch_variance = structured_data.get("pitch_variance", 0.0)
+        spectral_drift = structured_data.get("spectral_drift", 0.0)
+        zcr_variance = structured_data.get("zcr_variance", 0.0)
         
         language_instruction = "Hindi" if language == "hi" else "English"
         
         prompt = f"""
-You are Vaani's explanation assistant. Analyze the voice classification data and provide a clear, concise explanation.
+You are Vaani's explanation assistant. Analyze the voice classification data and provide a structured explanation.
 
 INPUT DATA:
 - Classification: {classification}
 - Confidence: {confidence:.2f}
+- Pitch Variance: {pitch_variance:.2f}
+- Spectral Drift: {spectral_drift:.2f}
+- Zero Crossing Rate Variance: {zcr_variance:.6f}
 
 REQUIREMENTS:
 1. Respond in {language_instruction}
-2. Maximum 120 words total
-3. Include explanation of the classification
-4. Include safety advisory guidance
+2. Maximum 150 words total across all fields
+3. Provide technical analysis based on acoustic signals
+4. Include specific safety recommendations
 5. No hallucinated claims or legal guarantees
-6. No exaggeration
+6. Base analysis on the provided acoustic metrics
 
 RESPONSE FORMAT (JSON):
 {{
-    "text": "Brief explanation in {language_instruction}",
-    "advisory": "Safety advisory in {language_instruction}"
+    "summary": "Brief explanation of the classification result",
+    "analysis": "Technical explanation based on acoustic signals (pitch variance, spectral drift, zcr)",
+    "recommendation": "Recommended action for the user"
 }}
 
 Analyze the data and provide response in the specified JSON format.
@@ -102,17 +109,38 @@ Analyze the data and provide response in the specified JSON format.
                 start = content.find("{")
                 end = content.rfind("}") + 1
                 json_str = content[start:end]
-                return json.loads(json_str)
+                parsed = json.loads(json_str)
+                
+                # Check if it's the new structured format
+                if "summary" in parsed and "analysis" in parsed and "recommendation" in parsed:
+                    return parsed
+                # Check if it's the old format
+                elif "text" in parsed and "advisory" in parsed:
+                    # Convert old format to new format
+                    return {
+                        "summary": parsed.get("text", ""),
+                        "analysis": parsed.get("text", ""),
+                        "recommendation": parsed.get("advisory", "")
+                    }
+                else:
+                    # Fallback: treat as plain text
+                    return {
+                        "summary": content.strip(),
+                        "analysis": content.strip(),
+                        "recommendation": "Stay alert and verify caller identity."
+                    }
             else:
                 # Fallback: treat as plain text
                 return {
-                    "text": content.strip(),
-                    "advisory": "Stay alert and verify caller identity."
+                    "summary": content.strip(),
+                    "analysis": content.strip(),
+                    "recommendation": "Stay alert and verify caller identity."
                 }
         except json.JSONDecodeError:
             return {
-                "text": content.strip(),
-                "advisory": "Stay alert and verify caller identity."
+                "summary": content.strip(),
+                "analysis": content.strip(),
+                "recommendation": "Stay alert and verify caller identity."
             }
     
     def _fallback_explanation(self, structured_data: Dict[str, Any], language: str) -> Dict[str, Any]:
@@ -122,31 +150,37 @@ Analyze the data and provide response in the specified JSON format.
         if language == "hi":
             fallbacks = {
                 "human": {
-                    "text": "यह आवाज़ वास्तविक मानव वक्ता की प्रतीत होती है।",
-                    "advisory": "सावधानी बरतें और कॉलर की पहचान सत्यापित करें।"
+                    "summary": "यह आवाज़ वास्तविक मानव वक्ता की प्रतीत होती है।",
+                    "analysis": "प्राकृतिक पिच विविधता और स्पेक्ट्रल पैटर्न मानव भाषण के लिए विशिष्ट हैं।",
+                    "recommendation": "सावधानी बरतें और कॉलर की पहचान सत्यापित करें।"
                 },
                 "ai_generated": {
-                    "text": "यह आवाज़ कृत्रिम रूप से उत्पन्न प्रतीत होती है।",
-                    "advisory": "सतर्क रहें! OTP या वित्तीय जानकारी साझा न करें।"
+                    "summary": "यह आवाज़ AI द्वारा उत्पन्न लगती है।",
+                    "analysis": "स्थिर पिच पैटर्न और कम स्पेक्ट्रल परिवर्तनशीलता सिंथेटिक भाषण का संकेत है।",
+                    "recommendation": "इस कॉल पर सतर्क रहें और बोलने वाले को दूसरे चैनल से सत्यापित करें।"
                 },
                 "inconclusive": {
-                    "text": "आवाज़ विश्लेषण अनिर्णायक है।",
-                    "advisory": "अतिरिक्त सतर्कता के रूप में सतर्क रहें।"
+                    "summary": "ऑडियो गुणवत्ता निर्णायक विश्लेषण के लिए अपर्याप्त है।",
+                    "analysis": "शोर या खराब ऑडियो गुणवत्ता के कारण सटीक विश्लेषण संभव नहीं है।",
+                    "recommendation": "कृपया बेहतर ऑडियो नमूना प्रदान करें।"
                 }
             }
         else:
             fallbacks = {
                 "human": {
-                    "text": "This voice appears to be from a real human speaker.",
-                    "advisory": "Exercise caution and verify caller identity."
+                    "summary": "This voice sample appears to be authentic human speech.",
+                    "analysis": "Natural pitch variations and spectral patterns are consistent with authentic human speech.",
+                    "recommendation": "No further action required. This appears to be a genuine human voice."
                 },
                 "ai_generated": {
-                    "text": "This voice appears to be artificially generated.",
-                    "advisory": "Be cautious! Do not share OTP or financial information."
+                    "summary": "This voice sample shows characteristics of AI-generated speech.",
+                    "analysis": "The model detected extremely stable pitch patterns and low spectral variability which are common in neural TTS systems.",
+                    "recommendation": "Treat this voice call with caution and verify the speaker through another channel."
                 },
                 "inconclusive": {
-                    "text": "Voice analysis is inconclusive.",
-                    "advisory": "Stay alert as an extra precaution."
+                    "summary": "Audio quality is insufficient for definitive analysis.",
+                    "analysis": "Background noise or poor audio quality prevents accurate acoustic analysis.",
+                    "recommendation": "Please provide a clearer audio sample with minimal background noise."
                 }
             }
         

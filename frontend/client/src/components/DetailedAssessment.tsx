@@ -4,11 +4,15 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 /**
  * Detailed Assessment Component
- * Design: Display explanation text and recommended action
+ * Design: Display structured explanation with summary, analysis, and recommendation
  * Shows assessment details with appropriate icon based on result
  */
 interface DetailedAssessmentProps {
-  explanation: string;
+  explanation: {
+    summary: string;
+    analysis: string;
+    recommendation: string;
+  };
   label: 'Human' | 'AI' | 'Inconclusive';
 }
 
@@ -21,11 +25,10 @@ export default function DetailedAssessment({
   const Icon = isHuman ? CheckCircle2 : isInconclusive ? AlertCircle : AlertCircle;
   const iconColor = isHuman ? 'text-teal-400' : isInconclusive ? 'text-amber-400' : 'text-rose-400';
 
-  const recommendedAction = isHuman
-    ? 'This voice sample appears to be authentic human speech. No further action required.'
-    : isInconclusive 
-    ? 'Audio quality is insufficient for definitive analysis. Please provide a clearer audio sample.'
-    : 'This voice sample shows characteristics of AI-generated or synthetic speech. Verify the source before using for critical applications.';
+  // Handle both structured and string explanations for backward compatibility
+  const explanationObj = typeof explanation === 'string' 
+    ? { summary: explanation, analysis: explanation, recommendation: "Stay alert and verify caller identity." }
+    : explanation;
 
   return (
     <motion.div
@@ -36,17 +39,33 @@ export default function DetailedAssessment({
     >
       <div className="flex items-start gap-4 mb-6">
         <Icon className={`w-6 h-6 ${iconColor} flex-shrink-0 mt-1`} />
-        <div>
-          <h3 className="text-white font-semibold text-lg mb-2">Assessment Details</h3>
-          <p className="text-gray-300 text-sm leading-relaxed font-light">{explanation}</p>
-        </div>
-      </div>
+        <div className="flex-1">
+          <h3 className="text-white font-semibold text-lg mb-4">Claude Explanation</h3>
+          
+          {/* Summary Section */}
+          <div className="mb-4">
+            <h4 className="text-gray-400 text-sm font-medium mb-2">Summary</h4>
+            <p className="text-gray-300 text-sm leading-relaxed font-light">
+              {explanationObj.summary || "Analysis summary not available."}
+            </p>
+          </div>
 
-      <div className="pt-6 border-t border-white/10">
-        <h4 className="text-gray-400 text-xs font-semibold uppercase mb-3 font-light tracking-wide">
-          Recommended Action
-        </h4>
-        <p className="text-gray-300 text-sm leading-relaxed font-light">{recommendedAction}</p>
+          {/* Technical Analysis Section */}
+          <div className="mb-4">
+            <h4 className="text-gray-400 text-sm font-medium mb-2">Technical Analysis</h4>
+            <p className="text-gray-300 text-sm leading-relaxed font-light">
+              {explanationObj.analysis || "Technical analysis not available."}
+            </p>
+          </div>
+
+          {/* Recommended Action Section */}
+          <div className="pt-4 border-t border-white/10">
+            <h4 className="text-gray-400 text-sm font-medium mb-2">Recommended Action</h4>
+            <p className="text-gray-300 text-sm leading-relaxed font-light">
+              {explanationObj.recommendation || "Stay alert and verify caller identity."}
+            </p>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

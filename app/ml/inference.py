@@ -291,6 +291,37 @@ def run_inference(audio: np.ndarray, sampling_rate: int = 16000) -> Dict[str, An
         print(f"❌ Inference failed: {str(e)}")
         raise RuntimeError(f"Inference failed: {str(e)}")
 
+def generate_claude_explanation(result: dict) -> str:
+    """Generate Claude explanation for voice analysis result using AWS Bedrock."""
+    try:
+        from app.llm.bedrock_llm import BedrockLLM
+        
+        # Initialize Bedrock client
+        llm = BedrockLLM()
+        
+        # Prepare structured data for Claude
+        structured_data = {
+            "label": result["label"],
+            "confidence": result["confidence"],
+            "pitch_variance": result["signals"]["pitch_variance"],
+            "spectral_drift": result["signals"]["spectral_drift"],
+            "zcr_variance": result["signals"]["zcr_variance"]
+        }
+        
+        # Generate explanation
+        explanation = llm.generate(structured_data, language="en")
+        return explanation
+        
+    except Exception as e:
+        print(f"⚠️ Failed to generate Claude explanation: {str(e)}")
+        # Fallback explanation
+        if result["label"] == "AI":
+            return "Synthetic voice patterns detected with artificial characteristics."
+        elif result["label"] == "Human":
+            return "Detected natural pitch variations and spectral patterns consistent with authentic human speech."
+        else:
+            return "Audio quality is insufficient for definitive analysis. Please provide a clearer audio sample."
+
 # Test function for verification
 def test_inference_pipeline():
     """Test the inference pipeline with dummy data"""

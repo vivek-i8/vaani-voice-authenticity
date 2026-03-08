@@ -9,7 +9,11 @@ export interface AnalysisResponse {
     spectral_drift: number;
     zcr_variance: number;
   };
-  explanation: string; // Add explanation field for compatibility
+  explanation: {
+    summary: string;
+    analysis: string;
+    recommendation: string;
+  };
 }
 
 export async function analyzeAudio(audioFile: File): Promise<AnalysisResponse> {

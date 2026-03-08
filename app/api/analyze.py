@@ -10,7 +10,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
 # Import our VAANI inference pipeline
-from app.ml.inference import run_inference
+from app.ml.inference import run_inference, generate_claude_explanation
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -80,6 +80,33 @@ async def analyze_audio_file(file: UploadFile = File(...)):
         try:
             result = run_inference(audio, sr)
             logger.info(f"Inference completed: {result['label']}")
+            
+            # Generate Claude explanation
+            try:
+                explanation = generate_claude_explanation(result)
+                result["explanation"] = explanation
+                logger.info(f"Claude explanation generated: {explanation.get('summary', 'N/A')[:100]}...")
+            except Exception as e:
+                logger.warning(f"Failed to generate Claude explanation: {str(e)}")
+                # Fallback explanation with structured format
+                if result["label"] == "AI":
+                    result["explanation"] = {
+                        "summary": "Synthetic voice patterns detected with artificial characteristics.",
+                        "analysis": "The model detected stable pitch patterns and low spectral variability common in AI-generated speech.",
+                        "recommendation": "Treat this voice call with caution and verify the speaker through another channel."
+                    }
+                elif result["label"] == "Human":
+                    result["explanation"] = {
+                        "summary": "Detected natural pitch variations and spectral patterns consistent with authentic human speech.",
+                        "analysis": "Natural pitch variations and spectral patterns are consistent with authentic human speech.",
+                        "recommendation": "No further action required. This appears to be a genuine human voice."
+                    }
+                else:
+                    result["explanation"] = {
+                        "summary": "Audio quality is insufficient for definitive analysis.",
+                        "analysis": "Background noise or poor audio quality prevents accurate acoustic analysis.",
+                        "recommendation": "Please provide a clearer audio sample with minimal background noise."
+                    }
             
         except Exception as e:
             raise HTTPException(
