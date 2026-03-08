@@ -8,11 +8,11 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
  * Shows assessment details with appropriate icon based on result
  */
 interface DetailedAssessmentProps {
-  explanation: {
-    summary: string;
-    analysis: string;
-    recommendation: string;
-  };
+  explanation?: {
+    summary?: string;
+    analysis?: string;
+    recommendation?: string;
+  } | string;
   label: 'Human' | 'AI' | 'Inconclusive';
 }
 
@@ -28,7 +28,17 @@ export default function DetailedAssessment({
   // Handle both structured and string explanations for backward compatibility
   const explanationObj = typeof explanation === 'string' 
     ? { summary: explanation, analysis: explanation, recommendation: "Stay alert and verify caller identity." }
-    : explanation;
+    : explanation && typeof explanation === 'object'
+    ? { 
+        summary: explanation.summary || "Analysis summary not available.", 
+        analysis: explanation.analysis || "Technical analysis not available.", 
+        recommendation: explanation.recommendation || "Stay alert and verify caller identity." 
+      }
+    : { 
+        summary: "Analysis summary not available.", 
+        analysis: "Technical analysis not available.", 
+        recommendation: "Stay alert and verify caller identity." 
+      };
 
   return (
     <motion.div

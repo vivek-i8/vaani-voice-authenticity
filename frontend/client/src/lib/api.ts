@@ -9,10 +9,10 @@ export interface AnalysisResponse {
     spectral_drift: number;
     zcr_variance: number;
   };
-  explanation: {
-    summary: string;
-    analysis: string;
-    recommendation: string;
+  explanation?: {
+    summary?: string;
+    analysis?: string;
+    recommendation?: string;
   };
 }
 
