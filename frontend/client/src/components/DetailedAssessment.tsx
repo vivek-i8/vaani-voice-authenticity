@@ -10,14 +10,17 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 interface DetailedAssessmentProps {
   explanation?: {
     summary?: string;
-    analysis?: string;
+    technical_analysis?: string;
     recommendation?: string;
+    model?: string;
   } | string;
+  explanation_source?: 'claude' | 'fallback';
   label: 'Human' | 'AI' | 'Inconclusive';
 }
 
 export default function DetailedAssessment({
   explanation,
+  explanation_source,
   label,
 }: DetailedAssessmentProps) {
   const isHuman = label === 'Human';
@@ -27,18 +30,24 @@ export default function DetailedAssessment({
 
   // Handle both structured and string explanations for backward compatibility
   const explanationObj = typeof explanation === 'string' 
-    ? { summary: explanation, analysis: explanation, recommendation: "Stay alert and verify caller identity." }
+    ? { summary: explanation, technical_analysis: explanation, recommendation: "Stay alert and verify caller identity.", model: "Claude Bedrock" }
     : explanation && typeof explanation === 'object'
     ? { 
         summary: explanation.summary || "Analysis summary not available.", 
-        analysis: explanation.analysis || "Technical analysis not available.", 
-        recommendation: explanation.recommendation || "Stay alert and verify caller identity." 
+        technical_analysis: explanation.technical_analysis || "Technical analysis not available.", 
+        recommendation: explanation.recommendation || "Stay alert and verify caller identity.",
+        model: explanation.model || "Claude Bedrock"
       }
     : { 
         summary: "Analysis summary not available.", 
-        analysis: "Technical analysis not available.", 
-        recommendation: "Stay alert and verify caller identity." 
+        technical_analysis: "Technical analysis not available.", 
+        recommendation: "Stay alert and verify caller identity.",
+        model: "Claude Bedrock"
       };
+
+  // Determine section title and label based on source
+  const sectionTitle = explanation_source === 'claude' ? 'Explanation via Claude AI Model' : 'Assessment Details';
+  const visualLabel = explanation_source === 'claude' ? 'Claude Bedrock AI Explanation' : 'Local Model Assessment';
 
   return (
     <motion.div
@@ -50,7 +59,14 @@ export default function DetailedAssessment({
       <div className="flex items-start gap-4 mb-6">
         <Icon className={`w-6 h-6 ${iconColor} flex-shrink-0 mt-1`} />
         <div className="flex-1">
-          <h3 className="text-white font-semibold text-lg mb-4">Claude Explanation</h3>
+          {/* Visual indicator label */}
+          <div className="mb-2">
+            <span className="text-xs font-medium text-gray-500 bg-gray-800/50 px-2 py-1 rounded">
+              {visualLabel}
+            </span>
+          </div>
+          
+          <h3 className="text-white font-semibold text-lg mb-4">{sectionTitle}</h3>
           
           {/* Summary Section */}
           <div className="mb-4">
@@ -64,7 +80,7 @@ export default function DetailedAssessment({
           <div className="mb-4">
             <h4 className="text-gray-400 text-sm font-medium mb-2">Technical Analysis</h4>
             <p className="text-gray-300 text-sm leading-relaxed font-light">
-              {explanationObj.analysis || "Technical analysis not available."}
+              {explanationObj.technical_analysis || "Technical analysis not available."}
             </p>
           </div>
 

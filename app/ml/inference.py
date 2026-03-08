@@ -305,7 +305,8 @@ def generate_claude_explanation(result: dict) -> str:
             "confidence": result["confidence"],
             "pitch_variance": result["signals"]["pitch_variance"],
             "spectral_drift": result["signals"]["spectral_drift"],
-            "zcr_variance": result["signals"]["zcr_variance"]
+            "zcr_variance": result["signals"]["zcr_variance"],
+            "entropy": result["entropy"]
         }
         
         # Generate explanation

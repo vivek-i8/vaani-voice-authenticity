@@ -85,6 +85,7 @@ async def analyze_audio_file(file: UploadFile = File(...)):
             try:
                 explanation = generate_claude_explanation(result)
                 result["explanation"] = explanation
+                result["explanation_source"] = "claude"
                 logger.info(f"Claude explanation generated: {explanation.get('summary', 'N/A')[:100]}...")
             except Exception as e:
                 logger.warning(f"Failed to generate Claude explanation: {str(e)}")
@@ -92,21 +93,22 @@ async def analyze_audio_file(file: UploadFile = File(...)):
                 if result["label"] == "AI":
                     result["explanation"] = {
                         "summary": "Synthetic voice patterns detected with artificial characteristics.",
-                        "analysis": "The model detected stable pitch patterns and low spectral variability common in AI-generated speech.",
+                        "technical_analysis": "The model detected stable pitch patterns and low spectral variability common in AI-generated speech.",
                         "recommendation": "Treat this voice call with caution and verify the speaker through another channel."
                     }
                 elif result["label"] == "Human":
                     result["explanation"] = {
                         "summary": "Detected natural pitch variations and spectral patterns consistent with authentic human speech.",
-                        "analysis": "Natural pitch variations and spectral patterns are consistent with authentic human speech.",
+                        "technical_analysis": "Natural pitch variations and spectral patterns are consistent with authentic human speech.",
                         "recommendation": "No further action required. This appears to be a genuine human voice."
                     }
                 else:
                     result["explanation"] = {
                         "summary": "Audio quality is insufficient for definitive analysis.",
-                        "analysis": "Background noise or poor audio quality prevents accurate acoustic analysis.",
+                        "technical_analysis": "Background noise or poor audio quality prevents accurate acoustic analysis.",
                         "recommendation": "Please provide a clearer audio sample with minimal background noise."
                     }
+                result["explanation_source"] = "fallback"
             
         except Exception as e:
             raise HTTPException(

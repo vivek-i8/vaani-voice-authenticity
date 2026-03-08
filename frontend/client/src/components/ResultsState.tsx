@@ -161,13 +161,14 @@ export default function ResultsState({ result }: ResultsStateProps) {
               summary: result.label === 'AI' ? 'AI-generated voice patterns detected.' : 
                       result.label === 'Human' ? 'Natural human voice patterns detected.' : 
                       'Analysis inconclusive due to insufficient audio quality.',
-              analysis: result.label === 'AI' ? 'The system detected characteristics consistent with synthetic voice generation.' :
+              technical_analysis: result.label === 'AI' ? 'The system detected characteristics consistent with synthetic voice generation.' :
                        result.label === 'Human' ? 'The system detected natural speech patterns typical of human voices.' :
                        'Audio quality prevents definitive analysis.',
               recommendation: result.label === 'AI' ? 'Verify the caller\'s identity through another channel.' :
                               result.label === 'Human' ? 'No additional action needed.' :
                               'Please provide a clearer audio sample.'
             }}
+            explanation_source={result.explanation_source || 'fallback'}
             label={result.label}
           />
         </motion.div>

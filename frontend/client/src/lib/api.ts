@@ -11,9 +11,11 @@ export interface AnalysisResponse {
   };
   explanation?: {
     summary?: string;
-    analysis?: string;
+    technical_analysis?: string;
     recommendation?: string;
+    model?: string;
   };
+  explanation_source?: 'claude' | 'fallback';
 }
 
 export async function analyzeAudio(audioFile: File): Promise<AnalysisResponse> {
