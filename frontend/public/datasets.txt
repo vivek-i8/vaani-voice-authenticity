@@ -1,0 +1,7 @@
+Datasets used during development:
+
+**Medley Deepfake Speech Dataset**
+https://data.mendeley.com/datasets/79g59sp69z/1
+
+**Audio Deepfake Detection Dataset (Kaggle)**
+https://www.kaggle.com/datasets/adarshsingh0903/audio-deepfake-detection-dataset
