@@ -17,7 +17,7 @@ export default function GitHubSection() {
       >
         {/* GitHub Link */}
         <a
-          href="https://github.com"
+          href="https://github.com/vivek-i8/vaani-voice-authenticity"
           target="_blank"
           rel="noopener noreferrer"
           className="text-gray-400 hover:text-teal-300 transition-colors duration-300 text-sm opacity-80 hover:opacity-100"
@@ -27,7 +27,9 @@ export default function GitHubSection() {
 
         {/* Dataset Link */}
         <a
-          href="#"
+          href="data:text/plain;charset=utf-8,Datasets%20used%20during%20development%3A%0A%0A**Medley%20Deepfake%20Speech%20Dataset**%0Ahttps%3A%2F%2Fdata.mendeley.com%2Fdatasets%2F79g59sp69z%2F1%0A%0A**Audio%20Deepfake%20Detection%20Dataset%20%28Kaggle%29**%0Ahttps%3A%2F%2Fwww.kaggle.com%2Fdatasets%2Fadarshsingh0903%2Faudio-deepfake-detection-dataset"
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-gray-400 hover:text-teal-300 transition-colors duration-300 text-sm opacity-80 hover:opacity-100"
         >
           Datasets
