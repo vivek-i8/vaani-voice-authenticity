@@ -6,6 +6,14 @@ import { motion } from 'framer-motion';
  * Design: Very small, transparent footer with GitHub and Datasets links
  */
 export default function GitHubSection() {
+  const datasetsContent = `Datasets used during development:
+
+**Medley Deepfake Speech Dataset**
+https://data.mendeley.com/datasets/79g59sp69z/1
+
+**Audio Deepfake Detection Dataset (Kaggle)**
+https://www.kaggle.com/datasets/adarshsingh0903/audio-deepfake-detection-dataset`;
+
   return (
     <section className="py-12 px-4">
       <motion.div
@@ -27,7 +35,7 @@ export default function GitHubSection() {
 
         {/* Dataset Link */}
         <a
-          href="/datasets.txt"
+          href="data:text/plain;charset=utf-8,${encodeURIComponent(datasetsContent)}"
           target="_blank"
           rel="noopener noreferrer"
           className="text-gray-400 hover:text-teal-300 transition-colors duration-300 text-sm opacity-80 hover:opacity-100"
