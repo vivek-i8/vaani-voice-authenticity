@@ -6,7 +6,7 @@ import Logo from './Logo';
  * Header Component
  * Design: Fixed header with 80px height
  * Left: Logo icon only
- * Right: Navigation links (How It Works, Technology, Dataset) + Analyze Voice button
+ * Right: Status badges + Analyze Voice button
  * The button scrolls to upload section on landing page
  */
 interface HeaderProps {
