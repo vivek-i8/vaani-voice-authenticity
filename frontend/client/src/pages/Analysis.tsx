@@ -1,82 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { motion } from 'framer-motion';
 import Header from '@/components/Header';
 import ProcessingState from '@/components/ProcessingState';
 import ResultsState from '@/components/ResultsState';
+import AnalysisErrorState from '@/components/AnalysisErrorState';
 import { analyzeAudio, type AnalysisResponse } from '@/lib/api';
 import { useAudio } from '@/contexts/AudioContext';
 
 /**
- * Analysis Page
- * Design: Two states - Processing and Results
- * Processing: Terminal-style logs with typing animation and progress bar
- * Results: Bento grid with confidence gauge, pitch chart, signal certainty, and assessment
+ * Analysis Page — V2
+ * Three states: processing, complete, error
+ * Uses AnalysisErrorState for structured error display
  */
 export default function Analysis() {
   const [, setLocation] = useLocation();
-  const [state, setState] = useState<'processing' | 'complete' | 'error'>('processing');
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResponse | undefined>(undefined);
+  const [state, setState] = useState<'processing' | 'complete' | 'error'>(
+    'processing',
+  );
+  const [analysisResult, setAnalysisResult] = useState<
+    AnalysisResponse | undefined
+  >(undefined);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorStatusCode, setErrorStatusCode] = useState<number | undefined>(
+    undefined,
+  );
   const { audioFile } = useAudio();
 
-  useEffect(() => {
-    // Check if audio file is available
+  const performAnalysis = useCallback(async () => {
     if (!audioFile) {
-      // Instead of redirecting, show a proper message
       setState('error');
+      setErrorMessage('No audio file selected. Please upload a file first.');
       return;
     }
 
-    // Real API call to /api/analyze
-    const performAnalysis = async () => {
-      try {
-        // Direct API call with hardcoded HTTPS URL
-        const formData = new FormData();
-        formData.append('file', audioFile);
+    setState('processing');
+    setErrorMessage('');
+    setErrorStatusCode(undefined);
 
-        const response = await fetch('https://vaani-13-233-132-63.duckdns.org/api/analyze/', {
-          method: 'POST',
-          body: formData,
-        });
+    try {
+      const result = await analyzeAudio(audioFile);
+      setAnalysisResult(result);
+      setState('complete');
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      const msg = error instanceof Error ? error.message : 'Analysis failed';
+      setErrorMessage(msg);
 
-        if (!response.ok) {
-          throw new Error(`Analysis failed: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        setAnalysisResult(result);
-        setState('complete');
-      } catch (error) {
-        console.error('Analysis failed:', error);
-        setState('error');
+      // Try to extract status code from error message
+      const statusMatch = msg.match(/\((\d+)\)/);
+      if (statusMatch) {
+        setErrorStatusCode(parseInt(statusMatch[1], 10));
       }
-    };
 
+      setState('error');
+    }
+  }, [audioFile]);
+
+  useEffect(() => {
     performAnalysis();
-  }, [audioFile, setLocation]);
+  }, [performAnalysis]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header showAnalyzeButton={false} />
 
-      <section className="pt-32 pb-16 px-4">
-        {state === 'processing' ? (
-          <ProcessingState />
-        ) : state === 'error' ? (
-          <div className="text-center py-8">
-            <p className="text-red-500 mb-4">No audio file found for analysis.</p>
-            <p className="text-gray-400 mb-6">Please upload an audio file from the home page to start analysis.</p>
-            <button 
-              onClick={() => setLocation('/')}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Go to Home Page
-            </button>
-          </div>
-        ) : (
+      {state === 'processing' && <ProcessingState />}
+
+      {state === 'error' && (
+        <section className="pt-32 pb-16 px-4">
+          <AnalysisErrorState
+            message={errorMessage}
+            statusCode={errorStatusCode}
+            onRetry={performAnalysis}
+          />
+        </section>
+      )}
+
+      {state === 'complete' && analysisResult && (
+        <section className="pt-32 pb-16 px-4">
           <ResultsState result={analysisResult} />
-        )}
-      </section>
+        </section>
+      )}
     </div>
   );
 }

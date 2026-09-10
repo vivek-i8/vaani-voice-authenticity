@@ -1,0 +1,54 @@
+{
+  "timestamp": "2026-08-23T20:12:04.664277",
+  "device": "cuda",
+  "gpu_name": "NVIDIA GeForce RTX 4050 Laptop GPU",
+  "compute_dtype": "float16-autocast",
+  "requested_batch_size": 16,
+  "effective_batch_size": null,
+  "oom_fallback_triggered": true,
+  "pilot_clips_requested": 400,
+  "pilot_clips_timed": 392,
+  "pilot_already_cached": 400,
+  "wall_seconds": 0.45,
+  "clips_per_sec": 878.52,
+  "per_clip_seconds": 0.0011,
+  "audio_load_seconds": 0.0,
+  "gpu_forward_seconds": 0.0,
+  "peak_vram_allocated_gib": null,
+  "peak_vram_reserved_gib": null,
+  "cache_total_mb": 1.61,
+  "cache_clip_count": 400,
+  "avg_kb_per_clip": 4.1,
+  "embedding_config_hash": "8b899868c2b4654c",
+  "estimates": {
+    "train_6000": {
+      "clips": 6000,
+      "estimated_extraction_seconds": 5.9,
+      "projected_cache_mb": 24.2
+    },
+    "train_8000": {
+      "clips": 8000,
+      "estimated_extraction_seconds": 8.2,
+      "projected_cache_mb": 32.2
+    },
+    "train_10000": {
+      "clips": 10000,
+      "estimated_extraction_seconds": 10.5,
+      "projected_cache_mb": 40.3
+    },
+    "train_full_18013": {
+      "clips": 18013,
+      "estimated_extraction_seconds": 19.6,
+      "projected_cache_mb": 72.6
+    },
+    "validation_full_5140": {
+      "clips": 5140,
+      "estimated_extraction_seconds": 4.9,
+      "projected_cache_mb": 20.7
+    }
+  },
+  "recommended_initial_train_subset": {
+    "tier": 10000,
+    "rationale": "Largest candidate tier with estimated extraction 10s within the 30.0 min budget"
+  }
+}

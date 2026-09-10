@@ -15,7 +15,6 @@ function Router() {
       <Route path={"/"} component={Landing} />
       <Route path={"/preview"} component={AudioPreview} />
       <Route path={"/analysis"} component={Analysis} />
-      <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>

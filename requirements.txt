@@ -1,14 +1,22 @@
-torch --index-url https://download.pytorch.org/whl/cu121
-torchvision --index-url https://download.pytorch.org/whl/cu121
-torchaudio --index-url https://download.pytorch.org/whl/cu121
+# PyTorch — CPU-compatible by default.
+# For local CUDA development, install from https://pytorch.org/get-started/locally/
+# Target deployment (Oracle A1) is CPU-only on Arm/AArch64.
+torch
 
+# ML / Audio
 transformers
 librosa
+soundfile  # librosa's only audio-loading backend on Linux; without it librosa.load fails
+numpy
+joblib
+scikit-learn
+
+# Backend
 fastapi
 uvicorn[standard]
 python-multipart
-numpy
-soundfile
 pydantic-settings
-boto3
-protobuf
+
+# Testing
+pytest
+httpx

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 /**
  * Upload Card Component
@@ -35,11 +36,15 @@ export default function UploadCard({ onFileSelect, isLoading = false }: UploadCa
 
   const validateAndProcessFile = (file: File) => {
     if (!supportedFormats.includes(file.type)) {
-      alert('Unsupported format. Please upload WAV, MP3, M4A, or FLAC.');
+      toast.error('Unsupported format', {
+        description: 'Please upload WAV, MP3, M4A, or FLAC.',
+      });
       return;
     }
     if (file.size > maxSize) {
-      alert('File size exceeds 50MB limit.');
+      toast.error('File too large', {
+        description: 'File size exceeds 50MB limit.',
+      });
       return;
     }
     setUploadedFile(file);

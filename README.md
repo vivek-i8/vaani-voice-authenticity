@@ -1,333 +1,279 @@
-# 🎙️ VAANI — AI Voice Authenticity Detection
+# VAANI V2 — Multi-Signal Voice Authenticity Analysis
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
 ![PyTorch](https://img.shields.io/badge/PyTorch-DeepLearning-ee4c2c)
 ![React](https://img.shields.io/badge/React-Frontend-61dafb)
-![AWS](https://img.shields.io/badge/AWS-Cloud-orange)
-![Status](https://img.shields.io/badge/Status-Prototype-success)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-VAANI is an AI-powered system that detects whether a voice recording is **human or AI-generated** using neural acoustic analysis and speech signal modeling.
+VAANI V2 is a transparent, evidence-grounded voice authenticity analysis system. It uses **multi-signal analysis** — combining a custom interpretable fusion model with an independent anti-spoofing checkpoint — to produce verdicts backed by retrievable evidence and honest reliability reporting.
 
-The system analyzes short audio clips and classifies them as:
-
-• 🧑 Human Voice  
-• 🤖 AI Generated Voice  
-• ⚠️ Inconclusive  
-
-VAANI combines **deep speech embeddings** with **acoustic signal analysis** to detect patterns typical of synthetic voices.
+**This is not a commercial-grade deepfake detector.** Independent benchmarking shows even large open-source efforts trained on 100K+ utterances score near-random against modern voice cloning. VAANI's goal is transparent, evidence-based analysis: multiple independent signals, retrievable comparison evidence, and reproducible reliability reporting. See the Reliability tab and model card below for actual evaluation metrics by audio condition.
 
 ---
 
-# 🚨 Problem Statement
+## Model Card
 
-AI voice cloning technologies can now replicate human voices with high realism.
+| Metric | Clean | Noisy | Compressed |
+|---|---|---|---|
+| EER | **2.4573%** | **2.4573%** | **53.8818%** |
+| Test speakers | \8 | \8 | \8 |
+| Conditions | Clean | Noisy | Compressed (mp3/flac) |
 
-These tools are increasingly used in:
-
-- 📞 Scam calls  
-- 📰 Misinformation campaigns  
-- 🪪 Identity fraud  
-
-Distinguishing human speech from AI-generated voices is therefore becoming an important security challenge.
-
-VAANI addresses this problem by analyzing acoustic characteristics of speech and identifying patterns commonly associated with synthetic voices.
+*Evaluation on the In-the-Wild test split (8 speakers, 7,206 clips). Thresholds: agreement_threshold=0.60, entropy_threshold=0.55. EER = Equal Error Rate. Clean and noisy conditions use the same EER due to evaluation protocol.*
 
 ---
 
-# 💡 Solution Overview
-
-VAANI analyzes uploaded voice recordings and determines voice authenticity.
-
-The system produces:
-
-• Prediction label  
-• Confidence score  
-• Signal certainty metrics  
-• Acoustic feature analysis  
-
-Predictions fall into three categories:
-
-Human Voice  
-AI Generated Voice  
-Inconclusive  
-
----
-
-# 🏗 System Architecture
-
-```mermaid
-flowchart TD
-
-A[User Browser] --> B[React Frontend]
-B --> C[FastAPI Backend]
-C --> D[Audio Processing Pipeline]
-
-D --> E[Wav2Vec2 Embedding Extraction]
-D --> F[Acoustic Feature Extraction]
-
-E --> G[Fusion Neural Network]
-F --> G
-
-G --> H[Confidence & Entropy Calculation]
-H --> I[Explainability Layer - AWS Bedrock Claude]
-I --> J[Final Result Returned to User]
-```
-
-The frontend communicates with the backend API which processes audio and runs the machine learning model.
-
----
-
-# ⚙️ How the System Works
-
-Audio Upload  
-↓  
-Audio Preprocessing  
-↓  
-Wav2Vec2 Embedding Extraction  
-↓  
-Acoustic Feature Extraction  
-↓  
-Fusion Neural Network Classification  
-↓  
-Confidence & Entropy Calculation  
-↓  
-Human / AI / Inconclusive Result  
-
-Entropy is used to determine uncertainty in predictions.
-
----
-
-# 🧰 Technology Stack
-
-## Backend
-
-- FastAPI  
-- PyTorch  
-- HuggingFace Transformers  
-- Librosa  
-
-## Frontend
-
-- React  
-- TypeScript  
-- Vite  
-- Tailwind CSS  
-
-## Infrastructure
-
-- AWS EC2  
-- AWS Bedrock (Claude) for explainability  
-
----
-
-# 🚀 Quick Start
-
-Clone repository:
+## Architecture
 
 ```
+Audio Upload
+  ↓
+Validation / Preprocessing (3-5s, 16kHz, mono)
+  ↓
+┌─────────────────────────────┐
+│  VAANI Fusion Signal        │  ← Wav2Vec2 embeddings + acoustic features
+│  (custom trained model)     │     → 2-class probability
+├─────────────────────────────┤
+│  Spectra-AASIST3 Signal     │  ← Independent anti-spoofing checkpoint
+│  (frozen, published)        │     → 2-class probability
+└─────────────────────────────┘
+  ↓
+Deterministic Ensemble Truth Table
+  ↓
+Reference Evidence Retrieval (nearest-neighbor cosine similarity)
+  ↓
+Structured Evidence Object
+  ↓
+Deterministic Explanation Engine
+  ↓
+API Response → Verdict / Evidence / Reliability UI
+```
+
+### Key Design Decisions
+
+- **No generative LLM** — explanations are deterministic and evidence-grounded
+- **No paid APIs** — all inference runs locally
+- **No AWS / Bedrock / Claude** — V2 removed all paid cloud dependencies
+- **Zero ongoing cost** — designed for Oracle Always Free A1 + Cloudflare Pages
+- **Evidence, not proof** — reference examples are comparable evidence, never framed as confirmation
+
+---
+
+## How It Works
+
+1. **Upload** a short audio clip (3-5 seconds, WAV/MP3/M4A/FLAC)
+2. **Two independent signals** analyze the audio separately
+3. **Deterministic ensemble** combines signals using a disclosed truth table
+4. **Reference evidence** retrieves comparable clips from the training dataset
+5. **Deterministic explanation** interprets the structured evidence (no AI generation)
+6. **Results** displayed in three tabs: Verdict, Evidence, Reliability
+
+### Verdict
+
+Shows the classification label, model-reported confidence, and any uncertainty triggers. The confidence score is model-reported confidence — not a validated probability of correctness.
+
+### Evidence
+
+Shows per-model scores, ensemble agreement/disagreement, acoustic features, and nearest-neighbor reference examples with similarity scores. Reference examples are explicitly labeled as comparable evidence, not proof.
+
+### Reliability
+
+Shows the model card, evaluation metrics by audio condition (clean/noisy/compressed), known limitations, and methodology disclosure.
+
+---
+
+## Dataset
+
+VAANI V2 uses the **In-the-Wild Audio Deepfake Dataset** (Müller et al., 2022).
+
+- Source: [https://github.com/RUB-SysSec/In_the_Wild_Audio_Deepfake_Dataset](https://github.com/RUB-SysSec/In_the_Wild_Audio_Deepfake_Dataset)
+- License: CC-BY-SA-4.0
+- The raw dataset is **not included** in this repository
+
+The dataset is split into four speaker-disjoint partitions:
+- **Training** — fusion head training
+- **Validation** — threshold tuning only
+- **Testing** — final evaluation only (never used for tuning)
+- **Reference Index** — evidence retrieval (excluded from training and evaluation)
+
+See `datasets/README.md` for detailed dataset preparation instructions.
+
+---
+
+## Setup
+
+### Backend
+
+```bash
+# Clone
 git clone https://github.com/vivek-i8/vaani-voice-authenticity.git
 cd vaani-voice-authenticity
-```
 
----
-
-# 🛠 Setup Instructions
-
-<details>
-<summary><b>Backend Setup</b></summary>
-
-Create virtual environment
-
-```
+# Create virtual environment
 python -m venv venv
-```
+source venv/bin/activate  # or venv\Scripts\activate on Windows
 
-Activate environment
-
-Windows
-
-```
-venv\Scripts\activate
-```
-
-Install dependencies
-
-```
+# Install dependencies
 pip install -r requirements.txt
-```
 
-Start backend server
-
-```
+# Start backend
 uvicorn app.main:app --reload
 ```
 
-Backend runs at
+Backend runs at `http://127.0.0.1:8000`
+API docs at `http://127.0.0.1:8000/docs`
 
-```
-http://127.0.0.1:8000
-```
+### Frontend
 
-API documentation
-
-```
-http://127.0.0.1:8000/docs
-```
-
-</details>
-
----
-
-<details>
-<summary><b>Frontend Setup</b></summary>
-
-Open a new terminal
-
-```
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend runs at
+Frontend runs at `http://localhost:3000`
 
-```
-http://localhost:3000
-```
+### Dataset Preparation
 
-</details>
+```bash
+# 1. Download In-the-Wild dataset (see datasets/README.md)
+# 2. Generate speaker-disjoint split
+python -m app.ml.create_dataset_split --dataset-dir datasets/in_the_wild
 
----
+# 3. GPU benchmark/pilot (300-500 clips) — required before large runs
+python -m app.ml.benchmark_gpu --split data/splits/in_the_wild_speaker_split.json
 
-# 📊 Dataset Sources
+# 4. Retrain fusion head on deterministic balanced TRAIN subset
+#    (--train-cap/--val-cap configurable; omit for full partitions once justified)
+python -m app.ml.retrain_fusion \
+  --split data/splits/in_the_wild_speaker_split.json \
+  --train-cap 7000 --val-cap 2000 --patience 8
 
-Datasets used during development:
+# 5. Build reference evidence index
+python -m app.ml.build_reference_index --split data/splits/in_the_wild_speaker_split.json
 
-**Medley Deepfake Speech Dataset**  
-https://data.mendeley.com/datasets/79g59sp69z/1
-
-**Audio Deepfake Detection Dataset (Kaggle)**  
-https://www.kaggle.com/datasets/adarshsingh0903/audio-deepfake-detection-dataset
-
-These datasets were used to create a balanced dataset of human and AI-generated speech samples.
-
-Datasets are not included in this repository due to size and licensing considerations.
-
----
-
-# 🧠 Model Architecture
-
-VAANI uses a **fusion architecture** combining deep speech embeddings and acoustic signal analysis.
-
-Components include:
-
-**Wav2Vec2 speech embeddings (1024-dimensional)**
-
-**Acoustic speech features**
-
-- Pitch variance  
-- Spectral drift  
-- Zero-crossing rate variance  
-
-These signals are combined and processed by a neural network classifier that produces authenticity predictions.
-
-Entropy is used to detect uncertain predictions and label them as **Inconclusive**.
-
----
-
-# 📈 Model Performance
-
-The VAANI fusion classifier was evaluated on a **held-out test split of the training dataset** consisting of human and AI-generated speech samples.
-
-| Metric | Value |
-|------|------|
-| Training Accuracy | 96.88% |
-| Validation Accuracy | 87.50% |
-| Test Accuracy | 90.00% |
-
-The model combines **Wav2Vec2 speech embeddings** with **acoustic signal features** and uses entropy-based uncertainty detection to classify uncertain predictions as **Inconclusive**.
-
----
-
-## Training Curves & Confusion Matrix
-
-![Training Results](models/vaani_model/training_curves.png)
-
-The training visualization above shows:
-
-• Training vs Validation Loss  
-• Training vs Validation Accuracy  
-• Confusion Matrix of predictions  
-
-### Confusion Matrix Summary
-
-| True Label | Predicted Human | Predicted AI |
-|------------|----------------|--------------|
-| Human | 20 | 0 |
-| AI | 4 | 16 |
-
-These results indicate that the model learns discriminative patterns between human and AI-generated speech **within the training dataset distribution**.
-
----
-
-# 📂 Project Structure
-
-```
-vaani
-│
-├── app
-│   ├── api
-│   ├── core
-│   ├── ml
-│   ├── services
-│   └── explainability
-│
-├── frontend
-│   └── React application
-│
-├── models
-│   └── trained model weights
-│
-├── datasets
-│   └── dataset references
-│
-├── docs
-│   └── project documentation
-│
-├── requirements.txt
-└── README.md
+# 6. Run evaluation on TEST partition
+python -m app.ml.evaluate --split data/splits/in_the_wild_speaker_split.json
 ```
 
-The backend handles inference while the frontend provides the user interface.
+---
+
+## Deployment
+
+### Target Architecture
+
+| Component | Target | Status |
+|---|---|---|
+| Frontend | Cloudflare Pages | Configured |
+| Backend | Oracle Always Free Ampere A1 (4 OCPU / 24 GB RAM) | Docker Compose ready |
+| Runtime | Docker Compose | docker-compose.yml provided |
+
+### Docker
+
+```bash
+cd deploy
+docker-compose up -d
+```
+
+### Memory Budget
+
+| Component | Estimated Memory |
+|---|---|
+| Wav2Vec2 XLS-R-53 | ~1.2 GB |
+| Fusion Head | ~5 MB |
+| Spectra-AASIST3 | ~1.38 GB |
+| **Total** | **~2.6 GB** (fits in 24 GB RAM) |
 
 ---
 
-# ⚠️ Limitations
+## Testing
 
-VAANI is currently trained on curated public datasets for AI voice detection.
+```bash
+# Run all tests
+python -m pytest tests/ -v
 
-Real-world audio recordings may introduce additional acoustic variations such as:
-
-- Background noise  
-- Microphone response differences  
-- Audio compression artifacts (MP3 encoding)  
-- Room reverberation  
-
-These variations can shift acoustic feature distributions and occasionally affect classification performance.
+# Run specific test suites
+python -m pytest tests/ml/test_smoke.py -v      # Architecture smoke tests
+python -m pytest tests/ml/test_ensemble.py -v    # Ensemble truth table
+python -m pytest tests/explainability/test_engine.py -v  # Explanation engine
+```
 
 ---
 
-# 🔮 Future Improvements
+## Technology Stack
 
-Future versions of VAANI will improve robustness through:
+### Backend
+- **FastAPI** — API server
+- **PyTorch** — ML inference
+- **HuggingFace Transformers** — Wav2Vec2 backbone
+- **Librosa** — audio processing
+- **scikit-learn** — feature scaling
 
-- Expanding the training dataset with real-world microphone recordings  
-- Including compressed audio formats such as MP3  
-- Applying audio augmentation techniques (noise, reverberation, device simulation)  
-- Improving feature normalization and calibration  
-- Extending evaluation across more diverse voice environments  
-- Real-time call detection  
-- Mobile application interface  
+### Frontend
+- **React 19** + **TypeScript**
+- **Vite** — build tool
+- **Tailwind CSS** + **shadcn/ui** — design system
+- **Recharts** — data visualization
+- **Framer Motion** — animations
 
-These improvements will allow VAANI to generalize more effectively to real-world audio conditions.
+### Models
+- **Wav2Vec2 XLS-R-53** — speech embeddings (frozen backbone)
+- **VAANI Fusion Head** — custom trained classifier (1027→256→128→2)
+- **Spectra-AASIST3** — independent anti-spoofing signal (Apache-2.0)
+
+---
+
+## Model Card
+
+| Metric | Clean | Noisy | Compressed |
+|---|---|---|---|
+| EER | **2.4573%** | **2.4573%** | **53.8818%** |
+| Test speakers | \8 | \8 | \8 |
+| Conditions | Clean | Noisy | Compressed (mp3/flac) |
+
+*Evaluation on the In-the-Wild test split (8 speakers, 7,206 clips). Thresholds: agreement_threshold=0.60, entropy_threshold=0.55. EER = Equal Error Rate. Clean and noisy conditions use the same EER due to evaluation protocol.*
+
+---
+
+## Known Limitations
+
+- Performance varies significantly by audio quality and recording conditions
+- The Inconclusive verdict may appear for ambiguous audio — this is designed behavior, not a failure
+- This system is not a forensic tool and should not be used as the sole basis for high-stakes decisions
+- Background noise, microphone differences, and compression artifacts can affect results
+- The compressed-audio condition (53.88% EER) is near-random — results on compressed or low-quality audio should not be relied on
+
+---
+
+## Project Structure
+
+```
+vaani-voice-authenticity/
+├── app/
+│   ├── api/           # API endpoints (analyze, model-card, health)
+│   ├── core/          # Device selection (CPU/CUDA)
+│   ├── explainability/# Deterministic explanation engine
+│   └── ml/            # ML pipeline (inference, ensemble, fusion head)
+├── data/splits/       # Speaker-disjoint split JSON
+├── datasets/          # Dataset documentation
+├── deploy/            # Docker configuration
+├── frontend/          # React frontend
+├── models/            # Model artifacts
+├── tests/             # Test suite
+└── requirements.txt
+```
+
+---
+
+## License
+
+MIT
+
+---
+
+## Citation
+
+If you use VAANI in research, please cite the In-the-Wild dataset:
+
+> Müller, N. et al. "In the Wild Audio Deepfake Detection Dataset." 2022.

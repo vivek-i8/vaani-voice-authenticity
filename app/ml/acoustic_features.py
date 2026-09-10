@@ -1,6 +1,5 @@
 import numpy as np
 import librosa
-from typing import Tuple
 
 def compute_pitch_variance(audio: np.ndarray, sample_rate: int = 16000) -> float:
     """

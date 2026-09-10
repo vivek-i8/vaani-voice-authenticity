@@ -1,0 +1,32 @@
+{
+  "status": "complete",
+  "timestamp": "2026-08-23T22:11:30.634787",
+  "dataset": "In-the-Wild",
+  "split_file": "data/splits/in_the_wild_speaker_split.json",
+  "test_speakers": 8,
+  "conditions": {
+    "clean": {
+      "eer": 2.4573,
+      "n_samples": 7206,
+      "condition": "clean"
+    },
+    "noisy": {
+      "eer": 2.4573,
+      "n_samples": 7206,
+      "condition": "noisy"
+    },
+    "compressed": {
+      "eer": 53.8818,
+      "n_samples": 7206,
+      "condition": "compressed"
+    }
+  },
+  "model_versions": {
+    "vaani_fusion_head": "v2.0",
+    "spectra_aasist3": "lab260/Spectra-AASIST3@bc0ded88"
+  },
+  "thresholds": {
+    "entropy_threshold": 0.55,
+    "agreement_threshold": 0.6
+  }
+}
