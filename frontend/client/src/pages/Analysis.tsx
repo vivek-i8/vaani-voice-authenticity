@@ -27,23 +27,10 @@ export default function Analysis() {
       return;
     }
 
-    // Real API call to /api/analyze
+    // Real API call to /api/analyze via the shared API client
     const performAnalysis = async () => {
       try {
-        // Direct API call with hardcoded HTTPS URL
-        const formData = new FormData();
-        formData.append('file', audioFile);
-
-        const response = await fetch('https://vaani-13-233-132-63.duckdns.org/api/analyze/', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Analysis failed: ${response.status} ${response.statusText}`);
-        }
-
-        const result = await response.json();
+        const result = await analyzeAudio(audioFile);
         setAnalysisResult(result);
         setState('complete');
       } catch (error) {

@@ -26,8 +26,8 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://vaani-truevoiceai.vercel.app",
-        "https://vaani-voice-authenticity-31zr.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "*"
     ],
     allow_credentials=False,

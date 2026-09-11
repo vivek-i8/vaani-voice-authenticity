@@ -5,7 +5,7 @@ The datasets used to train and evaluate VAANI voice authenticity detection syste
 Audio datasets significantly increase repository size and may contain licensing restrictions.  
 For this reason, only documentation and dataset sources are provided here.
 
-This file explains **which datasets were used and how to training dataset was constructed.**
+This file explains **which datasets were used and how the training dataset was constructed.**
 
 ---
 

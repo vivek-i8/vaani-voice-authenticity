@@ -9,7 +9,7 @@ from app.api.schemas import (
 from app.services.single_clip import analyze_single_clip
 from app.services.multi_clip import analyze_multiple_clips
 from app.audio.validators import validate_batch_size
-from app.ml.model_loader import get_model
+from app.ml.model_loader import get_model_state
 from app.core.device import DEVICE
 
 router = APIRouter()
@@ -52,11 +52,13 @@ async def analyze_batch_legacy(
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
-    model = get_model()
+    # Reports the state of the real V1 inference pipeline (singletons shared
+    # with the analysis path), not a separate heavyweight model.
+    state = get_model_state()
     
     device_type = "cuda" if DEVICE.type == "cuda" else "cpu"
     
     return HealthResponse(
-        status="ok" if model is not None else "model_not_loaded",
+        status="ok" if state == "ready" else "model_not_loaded",
         device=device_type
     )

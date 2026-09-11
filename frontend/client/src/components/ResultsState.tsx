@@ -7,6 +7,7 @@ import PitchStabilityChart from './PitchStabilityChart';
 import SignalCertainty from './SignalCertainty';
 import DetailedAssessment from './DetailedAssessment';
 import { useAudio } from '@/contexts/AudioContext';
+import type { ExplanationObject } from '@/lib/api';
 
 /**
  * Results State Component
@@ -25,7 +26,8 @@ interface ResultsStateProps {
       spectral_drift: number;
       zcr_variance: number;
     };
-    explanation: string;
+    explanation?: ExplanationObject;
+    explanation_source?: 'claude' | 'mock' | 'fallback';
   };
 }
 

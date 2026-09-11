@@ -1,188 +1,54 @@
-# 🎙️ VAANI — AI Voice Authenticity Detection
+# VAANI V1
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
-![PyTorch](https://img.shields.io/badge/PyTorch-DeepLearning-ee4c2c)
-![React](https://img.shields.io/badge/React-Frontend-61dafb)
-![AWS](https://img.shields.io/badge/AWS-Cloud-orange)
-![Status](https://img.shields.io/badge/Status-Prototype-success)
+⚠️ **This V1 branch is no longer maintained. VAANI V2 on `main` is the current and recommended version.**
 
-VAANI is an AI-powered system that detects whether a voice recording is **human or AI-generated** using neural acoustic analysis and speech signal modeling.
+V1 is the original VAANI implementation: a voice authenticity detector that classifies short audio clips as human or AI-generated. It was previously deployed on AWS, with an EC2 backend and Amazon Bedrock generating the explanations. That deployment is retired, so this branch exists for historical and engineering reference only.
 
-The system analyzes short audio clips and classifies them as:
+The code still runs locally on CPU. The one structural change from the original is the explanation provider: Bedrock was replaced with an OpenRouter-compatible provider behind the same `LLMService` interface, so no AWS account is needed.
 
-• 🧑 Human Voice  
-• 🤖 AI Generated Voice  
-• ⚠️ Inconclusive  
+## How it works
 
-VAANI combines **deep speech embeddings** with **acoustic signal analysis** to detect patterns typical of synthetic voices.
+1. Audio is resampled to 16 kHz mono with librosa.
+2. A frozen `facebook/wav2vec2-large-xlsr-53` backbone produces a 1024-dimensional mean-pooled embedding.
+3. Three acoustic features are computed: pitch variance, spectral-centroid drift, and zero-crossing-rate variance.
+4. The combined 1027-dimensional vector is standardized with a fitted `StandardScaler` and passed through the fusion head (1027 → 256 → 64 → 2, dropout 0.3, softmax).
+5. Entropy above 0.55 returns `Inconclusive`. Otherwise the class with the higher probability wins, `Human` or `AI`.
 
----
+Model artifacts live in `models/vaani_model/` (`fusion_head.pth`, `scaler.pkl`, `metadata.json`, `training_curves.png`).
 
-# 🚨 Problem Statement
-
-AI voice cloning technologies can now replicate human voices with high realism.
-
-These tools are increasingly used in:
-
-- 📞 Scam calls  
-- 📰 Misinformation campaigns  
-- 🪪 Identity fraud  
-
-Distinguishing human speech from AI-generated voices is therefore becoming an important security challenge.
-
-VAANI addresses this problem by analyzing acoustic characteristics of speech and identifying patterns commonly associated with synthetic voices.
-
----
-
-# 💡 Solution Overview
-
-VAANI analyzes uploaded voice recordings and determines voice authenticity.
-
-The system produces:
-
-• Prediction label  
-• Confidence score  
-• Signal certainty metrics  
-• Acoustic feature analysis  
-
-Predictions fall into three categories:
-
-Human Voice  
-AI Generated Voice  
-Inconclusive  
-
----
-
-# 🏗 System Architecture
-
-```mermaid
-flowchart TD
-
-A[User Browser] --> B[React Frontend]
-B --> C[FastAPI Backend]
-C --> D[Audio Processing Pipeline]
-
-D --> E[Wav2Vec2 Embedding Extraction]
-D --> F[Acoustic Feature Extraction]
-
-E --> G[Fusion Neural Network]
-F --> G
-
-G --> H[Confidence & Entropy Calculation]
-H --> I[Explainability Layer - AWS Bedrock Claude]
-I --> J[Final Result Returned to User]
-```
-
-The frontend communicates with the backend API which processes audio and runs the machine learning model.
-
----
-
-# ⚙️ How the System Works
-
-Audio Upload  
-↓  
-Audio Preprocessing  
-↓  
-Wav2Vec2 Embedding Extraction  
-↓  
-Acoustic Feature Extraction  
-↓  
-Fusion Neural Network Classification  
-↓  
-Confidence & Entropy Calculation  
-↓  
-Human / AI / Inconclusive Result  
-
-Entropy is used to determine uncertainty in predictions.
-
----
-
-# 🧰 Technology Stack
-
-## Backend
-
-- FastAPI  
-- PyTorch  
-- HuggingFace Transformers  
-- Librosa  
-
-## Frontend
-
-- React  
-- TypeScript  
-- Vite  
-- Tailwind CSS  
-
-## Infrastructure
-
-- AWS EC2  
-- AWS Bedrock (Claude) for explainability  
-
----
-
-# 🚀 Quick Start
-
-Clone repository:
+## Project structure
 
 ```
-git clone https://github.com/vivek-i8/vaani-voice-authenticity.git
-cd vaani-voice-authenticity
+app/
+  api/            # active /api/analyze/ route, deprecated /api/v1/* routes
+  audio/          # validation and resampling
+  core/           # settings, device selection
+  llm/            # LLMService, OpenRouter provider, mock provider
+  ml/             # inference pipeline, fusion head, acoustic features
+  services/       # legacy single and batch clip analysis
+frontend/
+  client/         # React and Vite app
+models/
+  vaani_model/    # trained artifacts
+tests/            # offline test suite
 ```
 
----
+## Running locally
 
-# 🛠 Setup Instructions
-
-<details>
-<summary><b>Backend Setup</b></summary>
-
-Create virtual environment
+Backend needs Python 3.10 or newer:
 
 ```
 python -m venv venv
-```
-
-Activate environment
-
-Windows
-
-```
-venv\Scripts\activate
-```
-
-Install dependencies
-
-```
+venv\Scripts\activate          # bash: source venv/Scripts/activate
 pip install -r requirements.txt
-```
-
-Start backend server
-
-```
 uvicorn app.main:app --reload
 ```
 
-Backend runs at
+The backend serves http://127.0.0.1:8000, with API docs at http://127.0.0.1:8000/docs.
 
-```
-http://127.0.0.1:8000
-```
+The first run downloads the Wav2Vec2 backbone (`facebook/wav2vec2-large-xlsr-53`, about 1.2 GB) from Hugging Face and caches it. Later runs work offline. On Windows, if the console throws `UnicodeEncodeError` on the emoji log output, run with `PYTHONUTF8=1`.
 
-API documentation
-
-```
-http://127.0.0.1:8000/docs
-```
-
-</details>
-
----
-
-<details>
-<summary><b>Frontend Setup</b></summary>
-
-Open a new terminal
+The frontend needs Node.js 18 or newer:
 
 ```
 cd frontend
@@ -190,144 +56,46 @@ npm install
 npm run dev
 ```
 
-Frontend runs at
+It runs at http://localhost:3000 and calls the backend at http://127.0.0.1:8000 by default. Set `VITE_API_BASE_URL` to point elsewhere (see `frontend/.env.example`).
 
-```
-http://localhost:3000
-```
+## Configuration
 
-</details>
+Backend settings live in `.env` (copy `.env.example`):
 
----
+| Variable | Default | Purpose |
+|---|---|---|
+| `USE_LLM` | `false` | `false` means deterministic mock explanations, no API key needed |
+| `OPENROUTER_API_KEY` | empty | required when `USE_LLM=true` |
+| `OPENROUTER_MODEL` | `anthropic/claude-3.5-sonnet` | any OpenRouter-compatible model id |
+| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter-compatible endpoint |
 
-# 📊 Dataset Sources
+Every response carries `explanation_source`, which says what produced the explanation: `mock` when no provider was called, `claude` when the configured provider responded, `fallback` when the provider failed and the deterministic built-in text was returned instead.
 
-Datasets used during development:
+## API
 
-**Medley Deepfake Speech Dataset**  
-https://data.mendeley.com/datasets/79g59sp69z/1
+Active endpoint: `POST /api/analyze/`, multipart form with the file in the `file` field:
 
-**Audio Deepfake Detection Dataset (Kaggle)**  
-https://www.kaggle.com/datasets/adarshsingh0903/audio-deepfake-detection-dataset
-
-These datasets were used to create a balanced dataset of human and AI-generated speech samples.
-
-Datasets are not included in this repository due to size and licensing considerations.
-
----
-
-# 🧠 Model Architecture
-
-VAANI uses a **fusion architecture** combining deep speech embeddings and acoustic signal analysis.
-
-Components include:
-
-**Wav2Vec2 speech embeddings (1024-dimensional)**
-
-**Acoustic speech features**
-
-- Pitch variance  
-- Spectral drift  
-- Zero-crossing rate variance  
-
-These signals are combined and processed by a neural network classifier that produces authenticity predictions.
-
-Entropy is used to detect uncertain predictions and label them as **Inconclusive**.
-
----
-
-# 📈 Model Performance
-
-The VAANI fusion classifier was evaluated on a **held-out test split of the training dataset** consisting of human and AI-generated speech samples.
-
-| Metric | Value |
-|------|------|
-| Training Accuracy | 96.88% |
-| Validation Accuracy | 87.50% |
-| Test Accuracy | 90.00% |
-
-The model combines **Wav2Vec2 speech embeddings** with **acoustic signal features** and uses entropy-based uncertainty detection to classify uncertain predictions as **Inconclusive**.
-
----
-
-## Training Curves & Confusion Matrix
-
-![Training Results](models/vaani_model/training_curves.png)
-
-The training visualization above shows:
-
-• Training vs Validation Loss  
-• Training vs Validation Accuracy  
-• Confusion Matrix of predictions  
-
-### Confusion Matrix Summary
-
-| True Label | Predicted Human | Predicted AI |
-|------------|----------------|--------------|
-| Human | 20 | 0 |
-| AI | 4 | 16 |
-
-These results indicate that the model learns discriminative patterns between human and AI-generated speech **within the training dataset distribution**.
-
----
-
-# 📂 Project Structure
-
-```
-vaani
-│
-├── app
-│   ├── api
-│   ├── core
-│   ├── ml
-│   ├── services
-│   └── explainability
-│
-├── frontend
-│   └── React application
-│
-├── models
-│   └── trained model weights
-│
-├── datasets
-│   └── dataset references
-│
-├── docs
-│   └── project documentation
-│
-├── requirements.txt
-└── README.md
+```json
+{
+  "label": "Human | AI | Inconclusive",
+  "confidence": 0.0,
+  "entropy": 0.0,
+  "signals": { "pitch_variance": 0.0, "spectral_drift": 0.0, "zcr_variance": 0.0 },
+  "explanation": { "summary": "...", "technical_analysis": "...", "recommendation": "...", "model": "..." },
+  "explanation_source": "claude | mock | fallback"
+}
 ```
 
-The backend handles inference while the frontend provides the user interface.
+The deprecated `POST /api/v1/analyze`, `POST /api/v1/analyze/batch`, and `GET /api/v1/health` routes are kept for historical compatibility.
 
----
+## Accuracy and training data
 
-# ⚠️ Limitations
+`metadata.json` records 90.0% test accuracy from the original training run. That is a historical training result on a small dataset (8 base clips, augmented), not a re-validated benchmark. The datasets are not in this repository; see `datasets/README.md` for their sources. Real-world audio with background noise, compression, or unusual microphones can shift the acoustic feature distributions and change results.
 
-VAANI is currently trained on curated public datasets for AI voice detection.
+## Tests
 
-Real-world audio recordings may introduce additional acoustic variations such as:
+```
+python -m pytest tests/ -v
+```
 
-- Background noise  
-- Microphone response differences  
-- Audio compression artifacts (MP3 encoding)  
-- Room reverberation  
-
-These variations can shift acoustic feature distributions and occasionally affect classification performance.
-
----
-
-# 🔮 Future Improvements
-
-Future versions of VAANI will improve robustness through:
-
-- Expanding the training dataset with real-world microphone recordings  
-- Including compressed audio formats such as MP3  
-- Applying audio augmentation techniques (noise, reverberation, device simulation)  
-- Improving feature normalization and calibration  
-- Extending evaluation across more diverse voice environments  
-- Real-time call detection  
-- Mobile application interface  
-
-These improvements will allow VAANI to generalize more effectively to real-world audio conditions.
+The suite runs offline. No API key and no model download are needed.

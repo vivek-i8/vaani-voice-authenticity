@@ -37,6 +37,12 @@ def analyze_zero_crossing_rate(audio: np.ndarray) -> float:
         return 0.0
 
 def generate_explanation(audio: np.ndarray, sr: int, classification: Classification, confidence: float) -> Dict[str, Any]:
+    # Accept both the enum and its string value ("human"/"ai_generated"/...)
+    if not isinstance(classification, Classification):
+        try:
+            classification = Classification(classification)
+        except ValueError:
+            classification = Classification.INCONCLUSIVE
     pitch_var = analyze_pitch_variance(audio, sr)
     spectral_flat = analyze_spectral_flatness(audio, sr)
     zcr_var = analyze_zero_crossing_rate(audio)

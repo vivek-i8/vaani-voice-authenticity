@@ -9,6 +9,11 @@ awaaz/
 venv/
 env/
 .venv/
+winter-env/
+
+# Local-only heavy runtime data (never commit)
+datasets/in_the_wild/
+models/vaani_model/embeddings/
 
 # Environment variables
 .env

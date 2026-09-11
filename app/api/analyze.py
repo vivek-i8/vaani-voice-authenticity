@@ -2,15 +2,16 @@ import os
 import tempfile
 import shutil
 import logging
-import numpy as np
 import librosa
-import io
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
 # Import our VAANI inference pipeline
 from app.ml.inference import run_inference, generate_claude_explanation
+from app.llm import get_llm_service
+from app.llm.base import LLMService
+from app.llm.mock_llm import MockLLM
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,38 @@ analyze_router = APIRouter(prefix="/analyze", tags=["analyze"])
 TEMP_UPLOADS_DIR = "temp_uploads"
 os.makedirs(TEMP_UPLOADS_DIR, exist_ok=True)
 
+# Safe suffix extracted from the client filename (no path components)
+_SAFE_SUFFIX_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+
+def _safe_suffix(filename: str | None, max_len: int = 32) -> str:
+    """Derive a path-safe temp file suffix from the client-supplied filename."""
+    name = os.path.basename(filename or "")
+    cleaned = "".join(c for c in name if c in _SAFE_SUFFIX_CHARS)
+    return f"_{cleaned[:max_len]}" if cleaned else ".wav"
+
+def _fallback_explanation(label: str) -> dict:
+    """Structured fallback explanation preserved from V1."""
+    if label == "AI":
+        return {
+            "summary": "Synthetic voice patterns detected with artificial characteristics.",
+            "technical_analysis": "The model detected stable pitch patterns and low spectral variability common in AI-generated speech.",
+            "recommendation": "Treat this voice call with caution and verify the speaker through another channel.",
+            "model": "fallback",
+        }
+    if label == "Human":
+        return {
+            "summary": "Detected natural pitch variations and spectral patterns consistent with authentic human speech.",
+            "technical_analysis": "Natural pitch variations and spectral patterns are consistent with authentic human speech.",
+            "recommendation": "No further action required. This appears to be a genuine human voice.",
+            "model": "fallback",
+        }
+    return {
+        "summary": "Audio quality is insufficient for definitive analysis.",
+        "technical_analysis": "Background noise or poor audio quality prevents accurate acoustic analysis.",
+        "recommendation": "Please provide a clearer audio sample with minimal background noise.",
+        "model": "fallback",
+    }
+
 @analyze_router.post("/")
 async def analyze_audio_file(file: UploadFile = File(...)):
     """
@@ -34,6 +67,7 @@ async def analyze_audio_file(file: UploadFile = File(...)):
     Returns:
         JSON response with analysis results
     """
+    temp_file_path = None
     try:
         # Validate file type
         if not file.content_type or not file.content_type.startswith('audio/'):
@@ -42,10 +76,10 @@ async def analyze_audio_file(file: UploadFile = File(...)):
                 detail="Invalid file type. Please upload an audio file."
             )
         
-        # Create temporary file
+        # Create temporary file with a path-safe suffix
         with tempfile.NamedTemporaryFile(
             delete=False, 
-            suffix=f"_{file.filename}", 
+            suffix=_safe_suffix(file.filename),
             dir=TEMP_UPLOADS_DIR
         ) as temp_file:
             temp_file_path = temp_file.name
@@ -70,6 +104,8 @@ async def analyze_audio_file(file: UploadFile = File(...)):
             
             logger.info(f"Audio loaded: {len(audio)} samples at {sr}Hz")
             
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(
                 status_code=400,
@@ -81,33 +117,19 @@ async def analyze_audio_file(file: UploadFile = File(...)):
             result = run_inference(audio, sr)
             logger.info(f"Inference completed: {result['label']}")
             
-            # Generate Claude explanation
+            # Generate LLM explanation through the provider factory
             try:
-                explanation = generate_claude_explanation(result)
+                llm_service = get_llm_service()
+                explanation = generate_claude_explanation(result, llm_service=llm_service)
                 result["explanation"] = explanation
-                result["explanation_source"] = "claude"
-                logger.info(f"Claude explanation generated: {explanation.get('summary', 'N/A')[:100]}...")
+                result["explanation_source"] = (
+                    "claude" if not isinstance(llm_service, MockLLM) else "mock"
+                )
+                logger.info(f"Explanation generated ({result['explanation_source']}): {explanation.get('summary', 'N/A')[:100]}...")
             except Exception as e:
-                logger.warning(f"Failed to generate Claude explanation: {str(e)}")
-                # Fallback explanation with structured format
-                if result["label"] == "AI":
-                    result["explanation"] = {
-                        "summary": "Synthetic voice patterns detected with artificial characteristics.",
-                        "technical_analysis": "The model detected stable pitch patterns and low spectral variability common in AI-generated speech.",
-                        "recommendation": "Treat this voice call with caution and verify the speaker through another channel."
-                    }
-                elif result["label"] == "Human":
-                    result["explanation"] = {
-                        "summary": "Detected natural pitch variations and spectral patterns consistent with authentic human speech.",
-                        "technical_analysis": "Natural pitch variations and spectral patterns are consistent with authentic human speech.",
-                        "recommendation": "No further action required. This appears to be a genuine human voice."
-                    }
-                else:
-                    result["explanation"] = {
-                        "summary": "Audio quality is insufficient for definitive analysis.",
-                        "technical_analysis": "Background noise or poor audio quality prevents accurate acoustic analysis.",
-                        "recommendation": "Please provide a clearer audio sample with minimal background noise."
-                    }
+                # Keep V1's structured fallback explanation on unexpected failure
+                logger.warning(f"Explanation generation failed: {e}")
+                result["explanation"] = _fallback_explanation(result["label"])
                 result["explanation_source"] = "fallback"
             
         except Exception as e:
@@ -115,13 +137,6 @@ async def analyze_audio_file(file: UploadFile = File(...)):
                 status_code=500,
                 detail=f"Inference failed: {str(e)}"
             )
-        
-        # Clean up temporary file
-        try:
-            os.unlink(temp_file_path)
-            logger.info(f"Temporary file cleaned up: {temp_file_path}")
-        except Exception as cleanup_error:
-            logger.warning(f"Failed to clean up temporary file: {cleanup_error}")
         
         return JSONResponse(content=result)
         
@@ -134,3 +149,11 @@ async def analyze_audio_file(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Internal server error: {str(e)}"
         )
+    finally:
+        # Clean up temporary file on every path (success and failure)
+        if temp_file_path:
+            try:
+                os.unlink(temp_file_path)
+                logger.info(f"Temporary file cleaned up: {temp_file_path}")
+            except Exception as cleanup_error:
+                logger.warning(f"Failed to clean up temporary file: {cleanup_error}")

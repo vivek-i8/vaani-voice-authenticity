@@ -277,6 +277,7 @@ def run_inference(audio: np.ndarray, sampling_rate: int = 16000) -> Dict[str, An
             "label": label,
             "confidence": confidence,
             "entropy": entropy,
+            "human_probability": float(probs_np[0]),
             "signals": {
                 "pitch_variance": float(acoustic_features[0]),
                 "spectral_drift": float(acoustic_features[1]),
@@ -291,30 +292,36 @@ def run_inference(audio: np.ndarray, sampling_rate: int = 16000) -> Dict[str, An
         print(f"❌ Inference failed: {str(e)}")
         raise RuntimeError(f"Inference failed: {str(e)}")
 
-def generate_claude_explanation(result: dict) -> str:
-    """Generate Claude explanation for voice analysis result using AWS Bedrock."""
+def generate_claude_explanation(result: dict, llm_service=None) -> dict:
+    """Generate an LLM explanation for a voice analysis result.
+
+    Name kept for V1 API compatibility. Uses the configured provider through
+    the existing LLM factory (OpenRouter-compatible when USE_LLM=true,
+    MockLLM otherwise) instead of instantiating a provider directly.
+    """
     try:
-        from app.llm.bedrock_llm import BedrockLLM
-        
-        # Initialize Bedrock client
-        llm = BedrockLLM()
-        
-        # Prepare structured data for Claude
+        if llm_service is None:
+            from app.llm import get_llm_service
+            llm_service = get_llm_service()
+
+        # Prepare structured data for the LLM. "classification" mirrors the
+        # label so provider fallbacks key on the same value.
         structured_data = {
             "label": result["label"],
+            "classification": str(result["label"]).lower(),
             "confidence": result["confidence"],
             "pitch_variance": result["signals"]["pitch_variance"],
             "spectral_drift": result["signals"]["spectral_drift"],
             "zcr_variance": result["signals"]["zcr_variance"],
             "entropy": result["entropy"]
         }
-        
+
         # Generate explanation
-        explanation = llm.generate(structured_data, language="en")
+        explanation = llm_service.generate(structured_data, language="en")
         return explanation
-        
+
     except Exception as e:
-        print(f"⚠️ Failed to generate Claude explanation: {str(e)}")
+        print(f"⚠️ Failed to generate explanation: {str(e)}")
         # Fallback explanation
         if result["label"] == "AI":
             return "Synthetic voice patterns detected with artificial characteristics."

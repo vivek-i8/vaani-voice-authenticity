@@ -14,7 +14,7 @@ interface DetailedAssessmentProps {
     recommendation?: string;
     model?: string;
   } | string;
-  explanation_source?: 'claude' | 'fallback';
+  explanation_source?: 'claude' | 'mock' | 'fallback';
   label: 'Human' | 'AI' | 'Inconclusive';
 }
 
@@ -30,24 +30,24 @@ export default function DetailedAssessment({
 
   // Handle both structured and string explanations for backward compatibility
   const explanationObj = typeof explanation === 'string' 
-    ? { summary: explanation, technical_analysis: explanation, recommendation: "Stay alert and verify caller identity.", model: "Claude Bedrock" }
+    ? { summary: explanation, technical_analysis: explanation, recommendation: "Stay alert and verify caller identity.", model: "LLM" }
     : explanation && typeof explanation === 'object'
     ? { 
         summary: explanation.summary || "Analysis summary not available.", 
         technical_analysis: explanation.technical_analysis || "Technical analysis not available.", 
         recommendation: explanation.recommendation || "Stay alert and verify caller identity.",
-        model: explanation.model || "Claude Bedrock"
+        model: explanation.model || "LLM"
       }
     : { 
         summary: "Analysis summary not available.", 
         technical_analysis: "Technical analysis not available.", 
         recommendation: "Stay alert and verify caller identity.",
-        model: "Claude Bedrock"
+        model: "LLM"
       };
 
   // Determine section title and label based on source
   const sectionTitle = explanation_source === 'claude' ? 'Explanation via Claude AI Model' : 'Assessment Details';
-  const visualLabel = explanation_source === 'claude' ? 'Claude Bedrock AI Explanation' : 'Local Model Assessment';
+  const visualLabel = explanation_source === 'claude' ? `Explanation via ${explanationObj.model}` : 'Local Model Assessment';
 
   return (
     <motion.div

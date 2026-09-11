@@ -50,14 +50,25 @@ def analyze_multiple_clips(file_bytes_list: List[bytes], language: str) -> Dict[
     alternate_language = "en" if language == "hi" else "hi"
     alternate_explanation = llm_service.generate(structured_data, alternate_language)
     
+    # Providers return the structured contract; fall back to text/advisory
+    # for mock-style responses.
+    def _text_advisory(explanation: Dict[str, Any]) -> tuple:
+        return (
+            explanation.get("text") or explanation.get("summary", ""),
+            explanation.get("advisory") or explanation.get("recommendation", ""),
+        )
+    
+    primary_text, primary_advisory = _text_advisory(primary_explanation)
+    alternate_text, alternate_advisory = _text_advisory(alternate_explanation)
+    
     # Create final explanation object
     explanation = Explanation(
         primary_language=language,
-        text=primary_explanation["text"],
-        advisory=primary_explanation["advisory"],
+        text=primary_text,
+        advisory=primary_advisory,
         alternate_language=alternate_language,
-        alternate_text=alternate_explanation["text"],
-        alternate_advisory=alternate_explanation["advisory"]
+        alternate_text=alternate_text,
+        alternate_advisory=alternate_advisory
     )
     
     return {
