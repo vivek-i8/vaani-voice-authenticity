@@ -1,279 +1,152 @@
-# VAANI V2 — Multi-Signal Voice Authenticity Analysis
+# VAANI
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
-![PyTorch](https://img.shields.io/badge/PyTorch-DeepLearning-ee4c2c)
-![React](https://img.shields.io/badge/React-Frontend-61dafb)
-![License](https://img.shields.io/badge/License-MIT-green)
+VAANI is a voice authenticity analysis service. Upload a short audio clip and it returns a Human, AI, or Inconclusive verdict with per-model scores, acoustic features, comparable reference examples, and a reliability report.
 
-VAANI V2 is a transparent, evidence-grounded voice authenticity analysis system. It uses **multi-signal analysis** — combining a custom interpretable fusion model with an independent anti-spoofing checkpoint — to produce verdicts backed by retrievable evidence and honest reliability reporting.
+## What it does
 
-**This is not a commercial-grade deepfake detector.** Independent benchmarking shows even large open-source efforts trained on 100K+ utterances score near-random against modern voice cloning. VAANI's goal is transparent, evidence-based analysis: multiple independent signals, retrievable comparison evidence, and reproducible reliability reporting. See the Reliability tab and model card below for actual evaluation metrics by audio condition.
+VAANI runs two independent classifiers on each clip and combines their outputs with a deterministic rule table. One classifier is a fusion head trained by this project on Wav2Vec2 embeddings plus three acoustic features. The other is the published Spectra-AASIST3 anti-spoofing model, used as an independent second opinion. When the two signals disagree, when a score falls in an ambiguous band, or when the fusion head's output entropy is high, the API returns Inconclusive instead of forcing a guess. Reference retrieval finds the closest clips in the training dataset by cosine similarity so a reader can compare evidence. Explanations come from a deterministic engine that reads the structured evidence object. No generative model produces any part of the output.
 
----
+The intended use is analyzing short speech clips when you want the basis for a verdict to be inspectable. It is not a forensic tool and should not be the only basis for a high-stakes decision.
 
-## Model Card
+## V2
 
-| Metric | Clean | Noisy | Compressed |
-|---|---|---|---|
-| EER | **2.4573%** | **2.4573%** | **53.8818%** |
-| Test speakers | \8 | \8 | \8 |
-| Conditions | Clean | Noisy | Compressed (mp3/flac) |
+`main` is V2, the current version. V1 is retired and preserved on the `v1-legacy` branch.
 
-*Evaluation on the In-the-Wild test split (8 speakers, 7,206 clips). Thresholds: agreement_threshold=0.60, entropy_threshold=0.55. EER = Equal Error Rate. Clean and noisy conditions use the same EER due to evaluation protocol.*
+V2 replaced the V1 design (single model, LLM-generated explanations) with the multi-signal pipeline described here.
 
----
+## How it works
 
-## Architecture
+1. Upload an audio file through the frontend or POST it to the API. The backend accepts formats the installed audio libraries can decode, including WAV, MP3, FLAC, and M4A. Audio is resampled to 16 kHz mono, clips under 3 seconds are rejected, and clips above 5 seconds are truncated. Max upload size is 20 MB.
+2. The fusion signal extracts a 1024-dimensional Wav2Vec2 embedding (mean pooling over the last hidden state) and three acoustic features (pitch variance, spectral centroid drift, zero-crossing rate variance). The 1027-dimensional vector is standardized with a scaler fitted on training data, then classified by the fusion head.
+3. The Spectra-AASIST3 signal scores the raw waveform independently. If its weights are unavailable, the pipeline runs in degraded mode: the VAANI signal alone decides, and the response is labeled `degraded`.
+4. The ensemble applies a disclosed rule table with two thresholds: scores at 0.60 or higher in p(bona fide) direction count as Human, at 0.40 or lower as AI, in between is ambiguous. Fusion-head entropy above 0.55 forces Inconclusive. Agreement between signals determines the verdict; disagreement returns Inconclusive.
+5. Reference retrieval embeds the query with the same Wav2Vec2 backbone and returns up to 3 nearest neighbors with cosine similarity at 0.5 or above, drawn from 1,420 reference-index clips that are excluded from training and evaluation.
+6. The explanation engine turns the structured evidence into summary, technical analysis, and recommendation text. Identical input produces identical output.
 
+## Model
+
+- Backbone: `facebook/wav2vec2-large-xlsr-53`, frozen, 1024-dim mean-pooled embeddings
+- Fusion head: `Linear(1027, 256) -> ReLU -> Dropout(0.2) -> Linear(256, 128) -> ReLU -> Dropout(0.2) -> Linear(128, 2)`, trained by this project
+- Second signal: `lab260/Spectra-AASIST3` at commit `bc0ded88` (Apache-2.0), used as published
+- Input: mono audio resampled to 16 kHz, 3 to 5 seconds
+- Decision: deterministic rule table, thresholds `agreement_threshold=0.60`, `entropy_threshold=0.55`
+- Reference retrieval: brute-force cosine similarity over 1,420 L2-normalized embeddings, top 3, minimum similarity 0.5
+- Scaler: `StandardScaler` fitted on the 18,013-clip training subset
+
+Evaluation on the In-the-Wild test split (8 speakers, 7,206 clips), produced by `app/ml/evaluate.py` and stored in `models/vaani_model/eval_report.json`:
+
+| Condition | EER | Samples |
+|---|---|---|
+| Clean | 2.4573% | 7,206 |
+| Noisy | 2.4573% | 7,206 |
+| Compressed | 53.8818% | 7,206 |
+
+Clean and noisy share the same EER because the evaluation protocol adds synthetic noise at low amplitude; the fusion-head scores change little under it. The compressed condition quantizes audio to 16-bit and degrades near random chance, so compressed-audio results should not be relied on. EER is the equal error rate. The compressed number is the honest result of this protocol and is reported as-is.
+
+## API
+
+Base URL defaults to `http://127.0.0.1:8000`. Interactive docs at `/docs`.
+
+### POST /api/analyze
+
+Multipart form field `file` containing an audio clip.
+
+```json
+{
+  "verdict": "Human",
+  "confidence": 0.78,
+  "confidence_note": "model-reported confidence, not a validated probability of correctness",
+  "entropy": 0.21,
+  "ensemble": {
+    "agreement": "agree",
+    "vaani_signal": { "score": 0.81, "prediction": "Human" },
+    "spectra_signal": { "score": 0.75, "prediction": "Human", "available": true },
+    "available": true
+  },
+  "signals": {
+    "pitch_variance": 0.0012,
+    "spectral_drift": 1432.5,
+    "zcr_variance": 0.018
+  },
+  "reference_examples": [
+    { "label": "bonafide", "similarity": 0.86, "source": "In-the-Wild", "source_id": "12.wav", "speaker_id": "..." }
+  ],
+  "reference_note": "Compared against 1,420 reference clips from In-the-Wild dataset",
+  "explanation": {
+    "summary": "Both signals agree: the audio appears to be authentic human speech.",
+    "evidence_cited": ["vaani_signal", "spectra_signal", "reference_examples"],
+    "technical_analysis": "VAANI score: 0.812 (prediction: Human). Spectra score: 0.753 (prediction: Human). ...",
+    "recommendation": "No additional action required based on this analysis alone."
+  },
+  "status": "ok",
+  "degraded": false
+}
 ```
-Audio Upload
-  ↓
-Validation / Preprocessing (3-5s, 16kHz, mono)
-  ↓
-┌─────────────────────────────┐
-│  VAANI Fusion Signal        │  ← Wav2Vec2 embeddings + acoustic features
-│  (custom trained model)     │     → 2-class probability
-├─────────────────────────────┤
-│  Spectra-AASIST3 Signal     │  ← Independent anti-spoofing checkpoint
-│  (frozen, published)        │     → 2-class probability
-└─────────────────────────────┘
-  ↓
-Deterministic Ensemble Truth Table
-  ↓
-Reference Evidence Retrieval (nearest-neighbor cosine similarity)
-  ↓
-Structured Evidence Object
-  ↓
-Deterministic Explanation Engine
-  ↓
-API Response → Verdict / Evidence / Reliability UI
-```
 
-### Key Design Decisions
+`verdict` is `Human`, `AI`, or `Inconclusive`. `confidence` averages the two p(bona fide) scores. `degraded` is true when the ensemble ran with the VAANI signal only. Error responses use FastAPI's `{"detail": "..."}` shape with status 400 (bad input), 413 (over 20 MB), or 500.
 
-- **No generative LLM** — explanations are deterministic and evidence-grounded
-- **No paid APIs** — all inference runs locally
-- **No AWS / Bedrock / Claude** — V2 removed all paid cloud dependencies
-- **Zero ongoing cost** — designed for Oracle Always Free A1 + Cloudflare Pages
-- **Evidence, not proof** — reference examples are comparable evidence, never framed as confirmation
-
----
-
-## How It Works
-
-1. **Upload** a short audio clip (3-5 seconds, WAV/MP3/M4A/FLAC)
-2. **Two independent signals** analyze the audio separately
-3. **Deterministic ensemble** combines signals using a disclosed truth table
-4. **Reference evidence** retrieves comparable clips from the training dataset
-5. **Deterministic explanation** interprets the structured evidence (no AI generation)
-6. **Results** displayed in three tabs: Verdict, Evidence, Reliability
-
-### Verdict
-
-Shows the classification label, model-reported confidence, and any uncertainty triggers. The confidence score is model-reported confidence — not a validated probability of correctness.
-
-### Evidence
-
-Shows per-model scores, ensemble agreement/disagreement, acoustic features, and nearest-neighbor reference examples with similarity scores. Reference examples are explicitly labeled as comparable evidence, not proof.
-
-### Reliability
-
-Shows the model card, evaluation metrics by audio condition (clean/noisy/compressed), known limitations, and methodology disclosure.
-
----
-
-## Dataset
-
-VAANI V2 uses the **In-the-Wild Audio Deepfake Dataset** (Müller et al., 2022).
-
-- Source: [https://github.com/RUB-SysSec/In_the_Wild_Audio_Deepfake_Dataset](https://github.com/RUB-SysSec/In_the_Wild_Audio_Deepfake_Dataset)
-- License: CC-BY-SA-4.0
-- The raw dataset is **not included** in this repository
-
-The dataset is split into four speaker-disjoint partitions:
-- **Training** — fusion head training
-- **Validation** — threshold tuning only
-- **Testing** — final evaluation only (never used for tuning)
-- **Reference Index** — evidence retrieval (excluded from training and evaluation)
-
-See `datasets/README.md` for detailed dataset preparation instructions.
-
----
-
-## Setup
-
-### Backend
+Example call:
 
 ```bash
-# Clone
-git clone https://github.com/vivek-i8/vaani-voice-authenticity.git
-cd vaani-voice-authenticity
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start backend
-uvicorn app.main:app --reload
+curl -F "file=@clip.wav" http://127.0.0.1:8000/api/analyze
 ```
 
-Backend runs at `http://127.0.0.1:8000`
-API docs at `http://127.0.0.1:8000/docs`
+### GET /api/model-card
 
-### Frontend
+Returns model identity, threshold constants, evaluation metrics by condition (from `models/vaani_model/eval_report.json`, or `evaluation_status: "unavailable"` if absent), and known limitations. Consumed by the frontend Reliability tab.
+
+### GET /api/health
+
+Returns `status` (`ok` or `partial`), per-model load flags, and the torch device in use.
+
+## Local development
+
+Prerequisites: Python 3.11 or later, Node.js 18 or later. The first backend start downloads the two pretrained models from HuggingFace (about 2.6 GB total), so allow disk space and time.
+
+Backend:
+
+```bash
+python -m venv venv
+source venv/bin/activate          # venv\Scripts\activate on Windows
+pip install -r requirements.txt
+uvicorn app.main:app --reload     # serves http://127.0.0.1:8000
+```
+
+Frontend:
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm run dev                       # serves http://localhost:3000
 ```
 
-Frontend runs at `http://localhost:3000`
+Environment variables (both optional):
 
-### Dataset Preparation
-
-```bash
-# 1. Download In-the-Wild dataset (see datasets/README.md)
-# 2. Generate speaker-disjoint split
-python -m app.ml.create_dataset_split --dataset-dir datasets/in_the_wild
-
-# 3. GPU benchmark/pilot (300-500 clips) — required before large runs
-python -m app.ml.benchmark_gpu --split data/splits/in_the_wild_speaker_split.json
-
-# 4. Retrain fusion head on deterministic balanced TRAIN subset
-#    (--train-cap/--val-cap configurable; omit for full partitions once justified)
-python -m app.ml.retrain_fusion \
-  --split data/splits/in_the_wild_speaker_split.json \
-  --train-cap 7000 --val-cap 2000 --patience 8
-
-# 5. Build reference evidence index
-python -m app.ml.build_reference_index --split data/splits/in_the_wild_speaker_split.json
-
-# 6. Run evaluation on TEST partition
-python -m app.ml.evaluate --split data/splits/in_the_wild_speaker_split.json
-```
-
----
-
-## Deployment
-
-### Target Architecture
-
-| Component | Target | Status |
-|---|---|---|
-| Frontend | Cloudflare Pages | Configured |
-| Backend | Oracle Always Free Ampere A1 (4 OCPU / 24 GB RAM) | Docker Compose ready |
-| Runtime | Docker Compose | docker-compose.yml provided |
-
-### Docker
-
-```bash
-cd deploy
-docker-compose up -d
-```
-
-### Memory Budget
-
-| Component | Estimated Memory |
-|---|---|
-| Wav2Vec2 XLS-R-53 | ~1.2 GB |
-| Fusion Head | ~5 MB |
-| Spectra-AASIST3 | ~1.38 GB |
-| **Total** | **~2.6 GB** (fits in 24 GB RAM) |
-
----
+- Backend: none required. Models load from HuggingFace by repo id.
+- Frontend: `VITE_API_BASE_URL` points the client at the backend. Defaults to same-origin requests (`/api/...`). See `frontend/.env.example`.
 
 ## Testing
 
 ```bash
-# Run all tests
 python -m pytest tests/ -v
-
-# Run specific test suites
-python -m pytest tests/ml/test_smoke.py -v      # Architecture smoke tests
-python -m pytest tests/ml/test_ensemble.py -v    # Ensemble truth table
-python -m pytest tests/explainability/test_engine.py -v  # Explanation engine
 ```
 
----
+43 tests pass, 1 skipped by design (an integration test that needs the real models). Coverage: ensemble truth table, explanation engine output shape and determinism, fusion head shapes and probability properties, scaler round-trip, embedding cache config hashing, deterministic subset selection, and API route tests with FastAPI's test client.
 
-## Technology Stack
+## Data and model provenance
 
-### Backend
-- **FastAPI** — API server
-- **PyTorch** — ML inference
-- **HuggingFace Transformers** — Wav2Vec2 backbone
-- **Librosa** — audio processing
-- **scikit-learn** — feature scaling
+Training and evaluation use the In-the-Wild Audio Deepfake Dataset (Müller et al., 2022): 31,779 clips, 54 speakers, CC-BY-SA-4.0. The raw audio is not included in this repository; see `datasets/README.md` for download, the committed speaker-disjoint split (`data/splits/in_the_wild_speaker_split.json`), and preparation commands. Dataset audio retains its own license and is not covered by this repository's license.
 
-### Frontend
-- **React 19** + **TypeScript**
-- **Vite** — build tool
-- **Tailwind CSS** + **shadcn/ui** — design system
-- **Recharts** — data visualization
-- **Framer Motion** — animations
+Third-party models, used as published:
 
-### Models
-- **Wav2Vec2 XLS-R-53** — speech embeddings (frozen backbone)
-- **VAANI Fusion Head** — custom trained classifier (1027→256→128→2)
-- **Spectra-AASIST3** — independent anti-spoofing signal (Apache-2.0)
+- `facebook/wav2vec2-large-xlsr-53`, Apache-2.0 (VAANI signal backbone)
+- `facebook/wav2vec2-xls-r-300m`, Apache-2.0 (SSL encoder inside Spectra-AASIST3)
+- `lab260/Spectra-AASIST3`, Apache-2.0 (second signal, pinned at commit `bc0ded88`)
 
----
-
-## Model Card
-
-| Metric | Clean | Noisy | Compressed |
-|---|---|---|---|
-| EER | **2.4573%** | **2.4573%** | **53.8818%** |
-| Test speakers | \8 | \8 | \8 |
-| Conditions | Clean | Noisy | Compressed (mp3/flac) |
-
-*Evaluation on the In-the-Wild test split (8 speakers, 7,206 clips). Thresholds: agreement_threshold=0.60, entropy_threshold=0.55. EER = Equal Error Rate. Clean and noisy conditions use the same EER due to evaluation protocol.*
-
----
-
-## Known Limitations
-
-- Performance varies significantly by audio quality and recording conditions
-- The Inconclusive verdict may appear for ambiguous audio — this is designed behavior, not a failure
-- This system is not a forensic tool and should not be used as the sole basis for high-stakes decisions
-- Background noise, microphone differences, and compression artifacts can affect results
-- The compressed-audio condition (53.88% EER) is near-random — results on compressed or low-quality audio should not be relied on
-
----
-
-## Project Structure
-
-```
-vaani-voice-authenticity/
-├── app/
-│   ├── api/           # API endpoints (analyze, model-card, health)
-│   ├── core/          # Device selection (CPU/CUDA)
-│   ├── explainability/# Deterministic explanation engine
-│   └── ml/            # ML pipeline (inference, ensemble, fusion head)
-├── data/splits/       # Speaker-disjoint split JSON
-├── datasets/          # Dataset documentation
-├── deploy/            # Docker configuration
-├── frontend/          # React frontend
-├── models/            # Model artifacts
-├── tests/             # Test suite
-└── requirements.txt
-```
-
----
+Spectra-AASIST3's `model.py` is vendored with modification in `app/ml/vendor/` under Apache-2.0. The vendored files retain their upstream provenance notes.
 
 ## License
 
-MIT
+This project is licensed under the Apache License, Version 2.0. See the `LICENSE` file for the full text.
 
----
-
-## Citation
-
-If you use VAANI in research, please cite the In-the-Wild dataset:
-
-> Müller, N. et al. "In the Wild Audio Deepfake Detection Dataset." 2022.
+Third-party models and the dataset keep their own licenses. The In-the-Wild dataset is CC-BY-SA-4.0. Apache-2.0 in this repository covers the project's original code and model work only.
