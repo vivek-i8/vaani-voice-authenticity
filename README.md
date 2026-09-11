@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="VAANI logo" width="360" />
+</p>
+
 # VAANI
 
 VAANI is a voice authenticity analysis service. Upload a short audio clip and it returns a Human, AI, or Inconclusive verdict with per-model scores, acoustic features, comparable reference examples, and a reliability report.
