@@ -59,6 +59,7 @@ temp_uploads/
 # Misc
 .ipynb_checkpoints/
 *.swp
+e2e_shots/
 
 # SSL / certificates
 *.pem

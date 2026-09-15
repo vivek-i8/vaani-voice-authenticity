@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 136 136" fill="none">
+  <!-- VAANI Official Brand Logo Favicon -->
+  <g transform="translate(4, 15)">
+    <!-- Left stroke of V (Primary Deep Charcoal Teal) -->
+    <polygon points="1,12 18,12 74,106 57,106" fill="#0E383B" />
+    <!-- Right stroke of V (Secondary Sage Teal) -->
+    <polygon points="57,106 74,106 101,60 84,60" fill="#689B95" />
+    <!-- Waveform Bar 1 (Deep Teal) -->
+    <rect x="67.8" y="15.5" width="5.4" height="31" rx="2.7" fill="#0E383B" />
+    <!-- Waveform Bar 2 (Deep Teal, Tallest Peak) -->
+    <rect x="81.3" y="0" width="5.4" height="60" rx="2.7" fill="#0E383B" />
+    <!-- Waveform Bar 3 (Sage Teal) -->
+    <rect x="94.3" y="9" width="5.4" height="42" rx="2.7" fill="#689B95" />
+    <!-- Waveform Bar 4 (Deep Teal) -->
+    <rect x="107.3" y="15.5" width="5.4" height="31" rx="2.7" fill="#0E383B" />
+    <!-- Waveform Bar 5 (Sage Teal) -->
+    <rect x="120.3" y="23.5" width="5.4" height="13" rx="2.7" fill="#689B95" />
+  </g>
+</svg>

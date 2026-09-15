@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  VAANI V2 — XML Sitemap
+
+  The production URL will be added upon deployment.
+  The homepage is the only intended public indexable page.
+  Analysis and results are application routes and are excluded.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage URL will be added upon deployment. -->
+</urlset>

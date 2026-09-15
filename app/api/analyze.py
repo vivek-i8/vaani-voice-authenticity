@@ -14,6 +14,7 @@ Pipeline:
 import os
 import tempfile
 import logging
+import uuid
 import numpy as np
 import torch
 import librosa
@@ -42,25 +43,56 @@ MAX_DURATION = 5.0
 SAMPLE_RATE = 16000
 
 
+def is_valid_audio_payload(data: bytes) -> bool:
+    """Validate audio header against known magic bytes to avoid trusting client MIME type alone."""
+    if len(data) < 12:
+        return False
+    # RIFF ... WAVE
+    if data[:4] == b"RIFF" and data[8:12] == b"WAVE":
+        return True
+    # FLAC stream marker
+    if data[:4] == b"fLaC":
+        return True
+    # ID3v2 tag (MP3)
+    if data[:3] == b"ID3":
+        return True
+    # MP3 frame sync (11 bits set: 0xFF followed by high 3 bits set in second byte)
+    if data[0] == 0xFF and (data[1] & 0xE0) == 0xE0:
+        return True
+    # MP4 / M4A ISO Base Media (ftyp box at offset 4)
+    if data[4:8] == b"ftyp":
+        return True
+    # Ogg container
+    if data[:4] == b"OggS":
+        return True
+    return False
+
+
 @analyze_router.post("/")
 async def analyze_audio_file(file: UploadFile = File(...)):
     """Analyze uploaded audio file using VAANI V2 multi-signal pipeline."""
     temp_file_path = None
     try:
-        # Validate file type
-        if not file.content_type or not file.content_type.startswith("audio/"):
-            raise HTTPException(status_code=400, detail="Invalid file type. Please upload an audio file.")
-
-        # Validate file size
+        # Validate file size and read bytes
         file_bytes = await file.read()
         if len(file_bytes) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="File too large. Maximum size is 20MB.")
         if len(file_bytes) == 0:
             raise HTTPException(status_code=400, detail="Empty file.")
 
-        # Save to temp file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}", dir=TEMP_UPLOADS_DIR) as tf:
-            temp_file_path = tf.name
+        # Validate content-type header
+        if file.content_type and not file.content_type.startswith("audio/"):
+            raise HTTPException(status_code=415, detail="Unsupported media type. Please upload an audio file.")
+
+        # Defense-in-depth: Validate magic bytes to verify audio format
+        if not is_valid_audio_payload(file_bytes):
+            raise HTTPException(status_code=400, detail="Invalid audio stream. Magic bytes signature does not match supported formats.")
+
+        # OWASP compliance: Never use client-supplied filename in filesystem paths.
+        # Store in isolated temp directory with cryptographically random UUID.
+        secure_filename = f"audio_{uuid.uuid4().hex}.tmp"
+        temp_file_path = os.path.join(TEMP_UPLOADS_DIR, secure_filename)
+        with open(temp_file_path, "wb") as tf:
             tf.write(file_bytes)
 
         # Load audio
